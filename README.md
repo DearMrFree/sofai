@@ -1,0 +1,2 @@
+# sofai
+School of Ai
