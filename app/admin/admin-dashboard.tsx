@@ -65,8 +65,14 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
   const [actionState, setActionState] = useState<{
     inflight: null | "approve" | "decline"
     error: string | null
-    success: string | null
-  }>({ inflight: null, error: null, success: null })
+  }>({ inflight: null, error: null })
+  // Lifted out of actionState because it must survive both (a) the
+  // selection-change effect that wipes per-row state and (b) the
+  // detail panel's empty-state branch (which renders when the row
+  // disappears from the current tab after an approve/decline). It is
+  // shown at the dashboard level, above the grid, so it stays visible
+  // regardless of which row is selected.
+  const [successBanner, setSuccessBanner] = useState<string | null>(null)
 
   const selected = useMemo(
     () => rows.find((r) => r.id === selectedId) ?? null,
@@ -122,22 +128,34 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
   }, [tab, loadQueue])
 
   // When the user clicks a different row, sync the review-note
-  // textarea to whatever's already on file. Reset action banner so
-  // a previous success/error from another row doesn't bleed across.
+  // textarea to whatever's already on file. Per-row state (inflight,
+  // error) resets so a previous failure doesn't bleed across rows.
+  // The success banner is intentionally NOT reset here — it lives at
+  // the dashboard level so it persists across the deselection that
+  // happens after a successful approve/decline.
   useEffect(() => {
     if (selected) {
       setReviewNote(selected.review_note ?? "")
     } else {
       setReviewNote("")
     }
-    setActionState({ inflight: null, error: null, success: null })
+    setActionState({ inflight: null, error: null })
   }, [selectedId, selected])
+
+  // Auto-dismiss the success banner after a beat so the dashboard
+  // doesn't accumulate stale confirmations across multiple reviews.
+  useEffect(() => {
+    if (!successBanner) return
+    const timer = setTimeout(() => setSuccessBanner(null), 6000)
+    return () => clearTimeout(timer)
+  }, [successBanner])
 
   const submitReview = async (status: PioneerStatus) => {
     if (!selected) return
     if (status === "pending") return // not exposed in UI
     const verb = status === "approved" ? "approve" : "decline"
-    setActionState({ inflight: verb, error: null, success: null })
+    setActionState({ inflight: verb, error: null })
+    setSuccessBanner(null)
     try {
       const res = await fetch(
         `/api/admin/pioneer-applications/${selected.id}`,
@@ -159,7 +177,7 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
         } catch {
           // fall through with default
         }
-        setActionState({ inflight: null, error: detail, success: null })
+        setActionState({ inflight: null, error: detail })
         return
       }
       const updated = JSON.parse(text) as PioneerApplicationRecord
@@ -175,14 +193,12 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
       if (updated.status !== tab) {
         setSelectedId(null)
       }
-      setActionState({
-        inflight: null,
-        error: null,
-        success:
-          status === "approved"
-            ? `Approved · ${updated.full_name} is now live at sof.ai/${updated.slug}.`
-            : `Declined · ${updated.full_name}'s slug is free for re-claim.`,
-      })
+      setActionState({ inflight: null, error: null })
+      setSuccessBanner(
+        status === "approved"
+          ? `Approved \u00b7 ${updated.full_name} is now live at sof.ai/${updated.slug}.`
+          : `Declined \u00b7 ${updated.full_name}'s slug is free for re-claim.`,
+      )
     } catch (err) {
       setActionState({
         inflight: null,
@@ -190,7 +206,6 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
           err instanceof Error
             ? err.message
             : "Network error while saving the review.",
-        success: null,
       })
     }
   }
@@ -231,6 +246,25 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
         className="rule-hairline my-10"
         aria-hidden="true"
       />
+
+      {successBanner ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-2 mb-4 flex items-start gap-2 rounded-md bg-emerald-100/60 px-4 py-3 text-sm text-emerald-900"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="flex-1">{successBanner}</span>
+          <button
+            type="button"
+            onClick={() => setSuccessBanner(null)}
+            className="rounded-sm text-emerald-900/70 hover:text-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
 
       {/* Tabs */}
       <div
@@ -275,7 +309,6 @@ export function AdminDashboard({ adminEmail }: DashboardProps) {
           onReviewNoteChange={setReviewNote}
           inflight={actionState.inflight}
           error={actionState.error}
-          success={actionState.success}
           onApprove={() => submitReview("approved")}
           onDecline={() => submitReview("declined")}
         />
@@ -408,7 +441,6 @@ interface DetailPanelProps {
   onReviewNoteChange: (s: string) => void
   inflight: null | "approve" | "decline"
   error: string | null
-  success: string | null
   onApprove: () => void
   onDecline: () => void
 }
@@ -420,7 +452,6 @@ function DetailPanel({
   onReviewNoteChange,
   inflight,
   error,
-  success,
   onApprove,
   onDecline,
 }: DetailPanelProps) {
@@ -515,12 +546,6 @@ function DetailPanel({
         <p className="mt-2 flex items-start gap-2 rounded-md bg-rose-100/60 px-3 py-2 text-sm text-rose-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className="mt-2 flex items-start gap-2 rounded-md bg-emerald-100/60 px-3 py-2 text-sm text-emerald-900">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-          {success}
         </p>
       ) : null}
 
