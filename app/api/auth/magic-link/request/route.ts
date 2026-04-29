@@ -67,7 +67,13 @@ export async function POST(req: Request) {
 
     const from =
       process.env.EMAIL_FROM ?? "School of Freedom <onboarding@resend.dev>"
-    const link = `https://sof.ai/signin/magic?token=${encodeURIComponent(
+    // Derive the link origin from the request itself (NextAuth's
+    // canonical NEXTAUTH_URL preferred, then the incoming host header)
+    // so preview deployments and localhost issue links that point back
+    // to themselves. Hardcoding `https://sof.ai` would 404 every preview
+    // build's magic link the moment a reviewer tests sign-in.
+    const origin = resolveOrigin(req)
+    const link = `${origin}/signin/magic?token=${encodeURIComponent(
       minted.token,
     )}`
 
@@ -120,6 +126,43 @@ function ipHashFromHeaders(headers: Headers): string {
   const first = fwd.split(",")[0]?.trim() ?? ""
   if (!first) return ""
   return createHash("sha256").update(first).digest("hex")
+}
+
+/**
+ * Resolve the canonical origin to embed in the outgoing magic-link URL.
+ *
+ * Order of preference:
+ *   1. NEXTAUTH_URL — the canonical site URL configured per environment.
+ *      On prod this is `https://sof.ai`; on previews you can leave it
+ *      unset to fall through to (2).
+ *   2. The request's host header (forwarded by Vercel via
+ *      x-forwarded-host / x-forwarded-proto). This makes preview
+ *      deployments self-link automatically without any env config.
+ *   3. As a last resort, parse the URL the route was hit at.
+ */
+function resolveOrigin(req: Request): string {
+  const configured = process.env.NEXTAUTH_URL
+  if (configured) {
+    try {
+      const u = new URL(configured)
+      return u.origin
+    } catch {
+      // fall through
+    }
+  }
+  const host =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? ""
+  const proto =
+    req.headers.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") ? "http" : "https")
+  if (host) {
+    return `${proto}://${host}`
+  }
+  try {
+    return new URL(req.url).origin
+  } catch {
+    return "https://sof.ai"
+  }
 }
 
 function renderEmail(link: string): string {

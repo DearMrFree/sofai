@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Loader2 } from "lucide-react"
+import { safeCallbackUrl } from "@/lib/safe-callback-url"
 
 /**
  * Magic-link landing page. Receives ?token=… from the email link, hands
@@ -31,7 +32,10 @@ function MagicLinkInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token") ?? ""
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  // Reject attacker-controlled cross-origin callback URLs. Without this,
+  // ?callbackUrl=https://evil.com would let a crafted email link open-
+  // redirect anyone who clicks it after a successful sign-in.
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
