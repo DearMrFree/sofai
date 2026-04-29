@@ -1,6 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import {
+  fetchApprovedPioneers,
+  pathwayTag,
+  type PioneerPathway,
+} from "@/lib/pioneers"
 
 export const metadata: Metadata = {
   title: "Students",
@@ -8,38 +13,55 @@ export const metadata: Metadata = {
 }
 
 /**
- * Placeholder pioneers — once the /apply flow is wired to the shared
- * Postgres in the next PR, this page reads from the approved profiles
- * table instead of a static list. The shape of each entry matches the
- * profile schema (slug, name, pathway, manifesto opener, status).
+ * The architect (Freedom) is hand-curated — he's the founder, not an
+ * applicant. Approved Pioneers come from the FastAPI backend; we
+ * concatenate Freedom on top so he's always at the head of the
+ * directory regardless of the row count below.
  */
-const PIONEERS = [
-  {
-    slug: "freedom-cheteni",
-    name: "Dr. Freedom Cheteni",
-    pathway: "Architect" as const,
-    state: "Liberating",
-    opener:
-      "Reinvention of societal infrastructure is the only bridge towards improving the quality of life for 8 billion people.",
-  },
-] as const
+interface DirectoryCard {
+  slug: string
+  name: string
+  pathway: PioneerPathway
+  opener: string
+}
 
-const PATHWAY_TO_STYLE: Record<string, { tag: string; halo: string }> = {
-  Architect: {
+const ARCHITECT: DirectoryCard = {
+  slug: "freedom-cheteni",
+  name: "Dr. Freedom Cheteni",
+  pathway: "architect",
+  opener:
+    "Reinvention of societal infrastructure is the only bridge towards improving the quality of life for 8 billion people.",
+}
+
+const PATHWAY_TO_STYLE: Record<PioneerPathway, { tag: string; halo: string }> = {
+  architect: {
     tag: "text-amber-700 bg-amber-100/60",
     halo: "from-amber-100 to-orange-100",
   },
-  VR: {
+  vr: {
     tag: "text-indigo-700 bg-indigo-100/60",
     halo: "from-indigo-100 to-sky-100",
   },
-  AI: {
+  ai: {
     tag: "text-emerald-700 bg-emerald-100/60",
     halo: "from-emerald-100 to-orange-100",
   },
 }
 
-export default function StudentsPage() {
+export default async function StudentsPage() {
+  const approved = await fetchApprovedPioneers()
+  const directory: DirectoryCard[] = [
+    ARCHITECT,
+    ...approved
+      .filter((p) => p.slug !== ARCHITECT.slug)
+      .map((p) => ({
+        slug: p.slug,
+        name: p.full_name,
+        pathway: p.pathway,
+        opener: p.mission_statement,
+      })),
+  ]
+
   return (
     <section className="mx-auto max-w-5xl px-4 lg:px-8 pt-12 pb-24">
       <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -57,8 +79,8 @@ export default function StudentsPage() {
       <div className="rule-hairline my-12" aria-hidden="true" />
 
       <ul className="grid gap-6 sm:grid-cols-2">
-        {PIONEERS.map((p) => {
-          const style = PATHWAY_TO_STYLE[p.pathway] ?? PATHWAY_TO_STYLE.AI
+        {directory.map((p) => {
+          const style = PATHWAY_TO_STYLE[p.pathway]
           return (
             <li key={p.slug}>
               <Link
@@ -89,7 +111,7 @@ export default function StudentsPage() {
                       <span
                         className={`rounded-md px-2 py-0.5 ${style.tag}`}
                       >
-                        {p.pathway}
+                        {pathwayTag(p.pathway)}
                       </span>
                       <span className="text-muted-foreground">
                         · sof.ai/{p.slug}

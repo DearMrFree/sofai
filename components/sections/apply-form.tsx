@@ -6,19 +6,24 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 /**
- * Multi-step manifesto application. Pure client UI for now — submission
- * lands in the next PR (when the route hits the shared Postgres via the
- * existing NextAuth-backed user table). Until then we simulate the round-
- * trip so the form can be exercised end-to-end on the preview deploy.
+ * Multi-step manifesto application.
+ *
+ * Submits to /api/pioneer-applications, which forwards into the AI
+ * School FastAPI's /pioneer-applications endpoint and writes to the
+ * shared Postgres. Once Freedom approves the row from the admin
+ * dashboard, the applicant's profile goes live at sof.ai/<slug> and a
+ * matching UserProfile row is upserted so their identity is unified
+ * across all three sister sites.
  */
 type Pathway = "vr" | "ai"
 
 interface FormState {
-  step: 0 | 1 | 2 | 3
+  step: 0 | 1 | 2 | 3 | 4
   name: string
   email: string
   pathway: Pathway | ""
   slug: string
+  mission: string
   manifesto: string
   submitting: boolean
   submitted: boolean
@@ -33,6 +38,9 @@ const slugify = (s: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 32)
+    .replace(/-+$/g, "")
+
+const STEP_LABELS = ["Identity", "Pathway", "Slug", "Mission", "Manifesto"] as const
 
 export function ApplyForm() {
   const [state, setState] = useState<FormState>({
@@ -41,6 +49,7 @@ export function ApplyForm() {
     email: "",
     pathway: "",
     slug: "",
+    mission: "",
     manifesto: "",
     submitting: false,
     submitted: false,
@@ -50,23 +59,48 @@ export function ApplyForm() {
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setState((s) => ({ ...s, [key]: value }))
 
-  const canAdvance: Record<0 | 1 | 2 | 3, boolean> = {
+  const canAdvance: Record<0 | 1 | 2 | 3 | 4, boolean> = {
     0: state.name.trim().length >= 2 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email),
     1: state.pathway !== "",
     2: state.slug.length >= 3 && state.slug === slugify(state.slug),
-    3: state.manifesto.trim().length >= 80,
+    3: state.mission.trim().length >= 10 && state.mission.trim().length <= 600,
+    4: state.manifesto.trim().length >= 80 && state.manifesto.trim().length <= 4000,
   }
 
   async function handleSubmit() {
     update("submitting", true)
     update("error", null)
     try {
-      // Placeholder round-trip — the next PR replaces this with a real
-      // POST to /api/applications that lands in the shared Postgres.
-      await new Promise((r) => setTimeout(r, 700))
+      const resp = await fetch("/api/pioneer-applications", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          full_name: state.name.trim(),
+          email: state.email.trim(),
+          slug: state.slug,
+          pathway: state.pathway,
+          mission_statement: state.mission.trim(),
+          personal_statement: state.manifesto.trim(),
+          identity_tags: [],
+        }),
+      })
+      if (!resp.ok) {
+        let detail = "Something went wrong. Please try again."
+        try {
+          const data = (await resp.json()) as { error?: string }
+          if (data.error) detail = data.error
+        } catch {
+          // keep default
+        }
+        update("error", detail)
+        return
+      }
       update("submitted", true)
-    } catch {
-      update("error", "Something went wrong. Please try again.")
+    } catch (err) {
+      update(
+        "error",
+        err instanceof Error ? err.message : "Network error. Please try again.",
+      )
     } finally {
       update("submitting", false)
     }
@@ -79,7 +113,7 @@ export function ApplyForm() {
           <Check className="h-6 w-6" aria-hidden="true" />
         </div>
         <h2 className="mt-5 font-serif text-3xl text-foreground">
-          Received. The trio reviews on a rolling basis.
+          Received. Freedom reviews on a rolling basis.
         </h2>
         <p className="mt-3 text-muted-foreground">
           You'll get an email when a decision is made. Approved applicants
@@ -97,7 +131,7 @@ export function ApplyForm() {
     <div className="space-y-10">
       {/* Step indicator — printed bar, not a progress bar. */}
       <ol className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-        {(["Identity", "Pathway", "Slug", "Manifesto"] as const).map((label, i) => (
+        {STEP_LABELS.map((label, i) => (
           <li
             key={label}
             className={cn(
@@ -222,6 +256,28 @@ export function ApplyForm() {
       {state.step === 3 && (
         <fieldset className="space-y-3">
           <legend className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+            Your mission
+          </legend>
+          <p className="text-sm text-muted-foreground">
+            One sentence. The pull-quote that will sit at the top of your
+            profile. Between 10 and 600 characters.
+          </p>
+          <textarea
+            value={state.mission}
+            onChange={(e) => update("mission", e.target.value)}
+            rows={3}
+            placeholder="I exist to…"
+            className="w-full rounded-md border border-border bg-background px-4 py-3 text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <p className="font-mono text-[11px] text-muted-foreground">
+            {state.mission.length} / 600 characters
+          </p>
+        </fieldset>
+      )}
+
+      {state.step === 4 && (
+        <fieldset className="space-y-3">
+          <legend className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
             Your manifesto
           </legend>
           <p className="text-sm text-muted-foreground">
@@ -237,7 +293,7 @@ export function ApplyForm() {
             className="w-full rounded-md border border-border bg-background px-4 py-3 text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <p className="font-mono text-[11px] text-muted-foreground">
-            {state.manifesto.length} characters
+            {state.manifesto.length} / 4000 characters
           </p>
         </fieldset>
       )}
@@ -255,11 +311,11 @@ export function ApplyForm() {
         >
           Back
         </Button>
-        {state.step < 3 ? (
+        {state.step < 4 ? (
           <Button
             type="button"
             onClick={() =>
-              update("step", Math.min(3, state.step + 1) as FormState["step"])
+              update("step", Math.min(4, state.step + 1) as FormState["step"])
             }
             disabled={!canAdvance[state.step]}
           >
@@ -270,7 +326,7 @@ export function ApplyForm() {
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!canAdvance[3] || state.submitting}
+            disabled={!canAdvance[4] || state.submitting}
           >
             {state.submitting ? (
               <>
