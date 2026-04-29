@@ -129,40 +129,80 @@ function ipHashFromHeaders(headers: Headers): string {
 }
 
 /**
+ * Allow-list of host suffixes from which a request's `Host` /
+ * `x-forwarded-host` header is trustworthy enough to embed in an
+ * outgoing magic-link URL. The header is otherwise attacker-controllable
+ * (forge `Host: evil.com` → email body contains `https://evil.com/...?token=…`),
+ * so without this filter, anyone hitting `/api/auth/magic-link/request`
+ * could phish-redirect a real, valid token.
+ *
+ * Vercel's edge mitigates by overriding forwarded headers, but that
+ * defence is platform-specific — locally / on Docker / on any non-Vercel
+ * runtime it doesn't apply, so we enforce explicitly.
+ */
+const TRUSTED_HOST_SUFFIXES = [
+  "sof.ai",
+  ".sof.ai",
+  ".vercel.app", // preview deployments
+  "localhost",
+  "127.0.0.1",
+] as const
+
+const FALLBACK_ORIGIN = "https://sof.ai"
+
+function isTrustedHost(host: string): boolean {
+  // Strip port for the suffix match (localhost:3000 → localhost).
+  const bare = host.split(":")[0]?.toLowerCase() ?? ""
+  if (!bare) return false
+  return TRUSTED_HOST_SUFFIXES.some((suffix) =>
+    suffix.startsWith(".") ? bare.endsWith(suffix) : bare === suffix,
+  )
+}
+
+/**
  * Resolve the canonical origin to embed in the outgoing magic-link URL.
  *
  * Order of preference:
  *   1. NEXTAUTH_URL — the canonical site URL configured per environment.
- *      On prod this is `https://sof.ai`; on previews you can leave it
- *      unset to fall through to (2).
- *   2. The request's host header (forwarded by Vercel via
- *      x-forwarded-host / x-forwarded-proto). This makes preview
- *      deployments self-link automatically without any env config.
- *   3. As a last resort, parse the URL the route was hit at.
+ *      On prod this is `https://sof.ai`; on previews leave it unset to
+ *      fall through to (2). Trusted unconditionally — operator-set.
+ *   2. Request's host header, but **only** if the host matches the
+ *      TRUSTED_HOST_SUFFIXES allow-list. Without this, a forged
+ *      `Host: evil.com` header would deliver a token to the attacker.
+ *   3. The URL the route was hit at, again allow-list-checked.
+ *   4. Hardcoded `https://sof.ai` last-resort fallback.
  */
 function resolveOrigin(req: Request): string {
   const configured = process.env.NEXTAUTH_URL
   if (configured) {
     try {
-      const u = new URL(configured)
-      return u.origin
+      return new URL(configured).origin
     } catch {
       // fall through
     }
   }
+
   const host =
     req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? ""
-  const proto =
-    req.headers.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https")
-  if (host) {
+  if (host && isTrustedHost(host)) {
+    const proto =
+      req.headers.get("x-forwarded-proto") ??
+      (host.startsWith("localhost") || host.startsWith("127.0.0.1")
+        ? "http"
+        : "https")
     return `${proto}://${host}`
   }
+
   try {
-    return new URL(req.url).origin
+    const reqUrl = new URL(req.url)
+    if (isTrustedHost(reqUrl.host)) {
+      return reqUrl.origin
+    }
   } catch {
-    return "https://sof.ai"
+    // fall through
   }
+
+  return FALLBACK_ORIGIN
 }
 
 function renderEmail(link: string): string {
