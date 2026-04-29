@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 
 import { displayNameFromEmail, generatePersona } from "@/lib/persona"
 import { verifyMagicLinkToken } from "@/lib/auth/magic-link"
+import { isAdminEmail } from "@/lib/admin-allowlist"
 
 const hasGoogle =
   !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET
@@ -120,6 +121,11 @@ export const authOptions: NextAuthOptions = {
         session.user.email = (token.email as string | undefined) ?? null
         session.user.name = (token.name as string | undefined) ?? null
         session.user.image = (token.picture as string | undefined) ?? null
+        // Surface admin status to the client so the navbar can render
+        // the Steward link without exposing the allowlist contents.
+        // Server routes still re-check against the allowlist before
+        // doing anything mutative — this flag is for UI affordance only.
+        session.user.isAdmin = isAdminEmail(session.user.email)
       }
       return session
     },

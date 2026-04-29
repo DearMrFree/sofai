@@ -45,3 +45,17 @@ export async function fetchWithTimeout(
     clearTimeout(timer)
   }
 }
+
+/**
+ * Server-only header bag for hitting internal-auth FastAPI routes.
+ * The X-Internal-Auth header proves the request came from one of our
+ * Next.js proxies (the FastAPI route deps `require_internal_auth`).
+ *
+ * Returns an empty object in dev / when the env var is missing — the
+ * FastAPI backend disables the gate when its own setting is empty, so
+ * tests + local stacks don't need to forge a header.
+ */
+export function internalAuthHeaders(): Record<string, string> {
+  const key = process.env.INTERNAL_API_KEY
+  return key ? { "X-Internal-Auth": key } : {}
+}

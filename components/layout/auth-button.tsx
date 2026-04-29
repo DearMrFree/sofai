@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
-import { LogOut, User } from "lucide-react"
+import { LogOut, ShieldCheck, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -57,6 +57,7 @@ export function AuthButton() {
   const name = session.user.name ?? "Pioneer"
   const email = session.user.email ?? ""
   const initials = initialsFor(name)
+  const isAdmin = session.user.isAdmin === true
 
   return (
     <div ref={ref} className="relative">
@@ -103,6 +104,17 @@ export function AuthButton() {
             <User className="h-4 w-4" aria-hidden="true" />
             Profile settings
           </Link>
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              role="menuitem"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60"
+              onClick={() => setOpen(false)}
+            >
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Pioneer queue
+            </Link>
+          ) : null}
           <button
             type="button"
             role="menuitem"
