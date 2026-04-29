@@ -106,7 +106,10 @@ function fromPioneer(p: PioneerProfile): RenderedProfile {
 }
 
 async function loadProfile(slug: string): Promise<RenderedProfile | null> {
-  if (slug in ARCHITECTS) return fromArchitect(ARCHITECTS[slug])
+  // `Object.hasOwn` (not `in`) — `in` walks the prototype chain, so
+  // /constructor, /toString etc would resolve to native Object members
+  // and crash the SSR with `tags: undefined`.
+  if (Object.hasOwn(ARCHITECTS, slug)) return fromArchitect(ARCHITECTS[slug])
   const pioneer = await fetchPioneerBySlug(slug)
   return pioneer ? fromPioneer(pioneer) : null
 }
