@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getApiBaseUrl } from "@/lib/apiBase"
+import { fetchWithTimeout, getApiBaseUrl } from "@/lib/apiBase"
 
 /**
  * Public submission proxy for the multi-step manifesto form.
@@ -67,21 +67,29 @@ export async function POST(req: Request) {
     )
   }
 
-  const upstream = await fetch(`${getApiBaseUrl()}/pioneer-applications`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      full_name: body.full_name.trim(),
-      email: body.email.trim(),
-      slug: body.slug.trim(),
-      pathway: body.pathway,
-      mission_statement: body.mission_statement.trim(),
-      personal_statement: body.personal_statement.trim(),
-      identity_tags: asTags(body.identity_tags),
-    }),
-    // Don't cache on edge — every submission must hit the origin.
-    cache: "no-store",
-  }).catch((err) => {
+  // 8s timeout — POST is more expensive than the SSR reads (writes
+  // hit the DB + may upsert UserProfile on approve) but still under
+  // Vercel's 10s budget so a hung Fly upstream surfaces as a clean
+  // 502 the form can render.
+  const upstream = await fetchWithTimeout(
+    `${getApiBaseUrl()}/pioneer-applications`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        full_name: body.full_name.trim(),
+        email: body.email.trim(),
+        slug: body.slug.trim(),
+        pathway: body.pathway,
+        mission_statement: body.mission_statement.trim(),
+        personal_statement: body.personal_statement.trim(),
+        identity_tags: asTags(body.identity_tags),
+      }),
+      // Don't cache on edge — every submission must hit the origin.
+      cache: "no-store",
+    },
+    8000,
+  ).catch((err) => {
     return new Response(
       JSON.stringify({
         error: `Could not reach the application service. ${
