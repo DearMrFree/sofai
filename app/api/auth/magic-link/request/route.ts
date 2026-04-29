@@ -42,26 +42,28 @@ export async function POST(req: Request) {
     )
   }
 
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    // Surface delivery-misconfig before minting a token. Otherwise
+    // requestMagicLink burns a single-use token + a rate-limit slot for
+    // an email we can't actually deliver — once Resend is configured
+    // later, the user can hit the per-email rate limit on their first
+    // *real* attempt because of past silent-burn requests.
+    return NextResponse.json(
+      {
+        delivered: false,
+        error:
+          "Email delivery isn't configured for this environment yet. Please use the guest sign-in for now.",
+      },
+      { status: 502 },
+    )
+  }
+
   const ipHash = ipHashFromHeaders(req.headers)
   const userAgent = req.headers.get("user-agent") ?? ""
 
   try {
     const minted = await requestMagicLink(email, { ipHash, userAgent })
-
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) {
-      // Without Resend configured we can't deliver — surface honestly so
-      // the client renders the recoverable-error path, not a fake
-      // "Check your inbox".
-      return NextResponse.json(
-        {
-          delivered: false,
-          error:
-            "Email delivery isn't configured for this environment yet. Please use the guest sign-in for now.",
-        },
-        { status: 502 },
-      )
-    }
 
     const from =
       process.env.EMAIL_FROM ?? "School of Freedom <onboarding@resend.dev>"
