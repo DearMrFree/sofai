@@ -36,6 +36,11 @@ const TRUSTED_NEXT_HOSTS = new Set([
 function resolveNext(raw: string | null, requestUrl: string): string {
   if (!raw) return new URL("/", requestUrl).toString()
   if (raw.startsWith("/") && !raw.startsWith("//")) {
+    // Strip control chars + CR/LF that could be smuggled into the
+    // ``Location`` header. Without this, ``?next=/%0d%0aSet-Cookie:…``
+    // could either crash Node's HTTP layer (preventing cookie clear)
+    // or smuggle headers into the redirect response.
+    if (/[\u0000-\u001f]/.test(raw)) return new URL("/", requestUrl).toString()
     return new URL(raw, requestUrl).toString()
   }
   try {
