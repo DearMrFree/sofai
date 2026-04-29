@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * School of Freedom — Manifesto-meets-warm palette.
+ *
+ * Backgrounds lean cream (paper, not white) so editorial serif headlines
+ * read like a printed manifesto. Accents pull warm emerald + warm orange
+ * from the VR-Enrollment family so the gateway feels related to the two
+ * sister schools without disappearing into either.
+ */
+:root {
+  /* Foundation */
+  --background: #fffaf0;       /* paper cream */
+  --foreground: #18181b;       /* near-black ink */
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+
+  /* Primary action: deep emerald (the "go" of growth) */
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+
+  /* Secondary: warm clay orange (the "sun" of momentum) */
+  --secondary: #c2410c;
+  --secondary-foreground: #ffffff;
+
+  /* Muted */
+  --muted: #f5efe2;            /* warm muted paper */
+  --muted-foreground: #57534e;
+
+  /* Accent: amber gold (editorial highlight) */
+  --accent: #d97706;
+  --accent-foreground: #ffffff;
+
+  /* System */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #047857;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --border: #e7e0d2;
+  --input: #f0e9d8;
+  --ring: rgba(4, 120, 87, 0.4);
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #1c1917;
+  --foreground: #fafaf9;
+  --card: #292524;
+  --card-foreground: #fafaf9;
+  --popover: #292524;
+  --popover-foreground: #fafaf9;
+
+  --primary: #34d399;
+  --primary-foreground: #064e3b;
+  --secondary: #fb923c;
+  --secondary-foreground: #18181b;
+  --muted: #292524;
+  --muted-foreground: #a8a29e;
+  --accent: #f59e0b;
+  --accent-foreground: #18181b;
+
+  --destructive: #f87171;
+  --destructive-foreground: #18181b;
+  --success: #34d399;
+  --success-foreground: #064e3b;
+  --warning: #fbbf24;
+  --warning-foreground: #18181b;
+  --border: #44403c;
+  --input: #44403c;
+  --ring: rgba(52, 211, 153, 0.5);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Geist Sans for body, Instrument Serif for the manifesto headlines */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: var(--font-instrument-serif), "EB Garamond", Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  /* Editorial headings — manifesto serif, slight optical-size feel via tracking */
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
+  }
+
+  /* Hairline divider — the kind you'd see between sections of a printed essay */
+  .rule-hairline {
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      var(--border) 8%,
+      var(--border) 92%,
+      transparent
+    );
+    height: 1px;
+  }
+
+  /* Slow ambient drift used by the hero — subtle so it never distracts */
+  @keyframes drift {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50%      { transform: translate3d(0, -6px, 0); }
+  }
+  .animate-drift { animation: drift 9s ease-in-out infinite; }
+
+  /* "Now reading" pulse on the section the user is anchored to */
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.6; }
+    50%      { opacity: 1; }
+  }
+  .animate-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+}
