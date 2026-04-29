@@ -33,6 +33,11 @@ const slugify = (s: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 32)
+    // Re-strip a trailing hyphen if the 32-char cap landed on one. Without
+    // this second pass, slugify is non-idempotent — `slugify(slugify(x))`
+    // can differ from `slugify(x)`, which silently breaks the
+    // `state.slug === slugify(state.slug)` advance check below.
+    .replace(/-+$/g, "")
 
 export function ApplyForm() {
   const [state, setState] = useState<FormState>({
