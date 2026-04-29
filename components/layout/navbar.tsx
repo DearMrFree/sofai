@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AuthButton } from "@/components/layout/auth-button"
 import { cn } from "@/lib/utils"
 
 /**
@@ -92,14 +93,7 @@ export function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-2">
-          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-            <a
-              href="https://ai.thevrschool.org/signin?callbackUrl=https%3A%2F%2Fsof.ai%2F"
-              rel="noreferrer"
-            >
-              Sign in
-            </a>
-          </Button>
+          <AuthButton />
           <Button asChild size="sm">
             <Link href="/apply">Apply</Link>
           </Button>
