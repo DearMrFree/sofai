@@ -1,0 +1,34 @@
+{
+  "name": "school-of-freedom",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "1.1.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "geist": "^1.3.1",
+    "lucide-react": "^0.454.0",
+    "next": "14.2.25",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0-beta.7",
+    "@types/node": "^22",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.25",
+    "postcss": "^8",
+    "tailwindcss": "^4.0.0-beta.7",
+    "tw-animate-css": "^1.0.6",
+    "typescript": "^5"
+  }
+}
