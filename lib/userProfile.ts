@@ -97,7 +97,13 @@ export async function patchUserProfile(
           "content-type": "application/json",
           ...internalAuthHeaders(),
         },
-        body: JSON.stringify({ email: e, ...payload }),
+        // Spread payload FIRST so the trusted, session-derived email
+        // always wins. The current proxy strips email via pickEditable
+        // before we get here, but `patchUserProfile` is a public export
+        // — making the function itself immune to override is defence
+        // in depth against a future caller that forwards an
+        // un-sanitised body.
+        body: JSON.stringify({ ...payload, email: e }),
         cache: "no-store",
       },
     )
