@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "./apiBase"
+import { fetchWithTimeout, getApiBaseUrl } from "./apiBase"
 
 /**
  * Read-side helpers for approved Pioneers.
@@ -38,7 +38,7 @@ export async function fetchPioneerBySlug(
   slug: string,
 ): Promise<PioneerProfile | null> {
   try {
-    const r = await fetch(
+    const r = await fetchWithTimeout(
       `${getApiBaseUrl()}/pioneer-applications/by-slug/${encodeURIComponent(slug)}`,
       { cache: "no-store" },
     )
@@ -57,7 +57,7 @@ export async function fetchApprovedPioneers(
   limit: number = DEFAULT_LIMIT,
 ): Promise<PioneerProfile[]> {
   try {
-    const r = await fetch(
+    const r = await fetchWithTimeout(
       `${getApiBaseUrl()}/pioneer-applications/approved?limit=${limit}`,
       { cache: "no-store" },
     )
