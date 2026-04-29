@@ -6,6 +6,7 @@ import { Instrument_Serif } from "next/font/google"
 import "./globals.css"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
+import { SessionProvider } from "@/components/providers/session-provider"
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -79,9 +80,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans min-h-screen flex flex-col bg-background text-foreground">
-        <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <Footer />
+        <SessionProvider>
+          <Navbar />
+          <main className="flex-1 flex flex-col">{children}</main>
+          <Footer />
+        </SessionProvider>
       </body>
     </html>
   )
