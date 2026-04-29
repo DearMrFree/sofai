@@ -119,6 +119,12 @@ function SigninInner() {
       }
       router.replace(callbackUrl)
       router.refresh()
+    } catch {
+      // Network failure or NextAuth client throw — surface to the user
+      // instead of silently clearing the spinner with no explanation.
+      setGeneralError(
+        "Network problem reaching the sign-in service. Please try again.",
+      )
     } finally {
       setGuestLoading(false)
     }
@@ -129,6 +135,10 @@ function SigninInner() {
     setGoogleLoading(true)
     try {
       await signIn("google", { callbackUrl })
+    } catch {
+      setGeneralError(
+        "Couldn't reach Google sign-in. Please try again or use email.",
+      )
     } finally {
       setGoogleLoading(false)
     }
