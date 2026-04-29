@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { ArrowRight, Loader2, Mail, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { safeCallbackUrl } from "@/lib/safe-callback-url"
 
 const GoogleGlyph = () => (
   <svg
@@ -51,7 +52,11 @@ export default function SigninPage() {
 function SigninInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  // Sanitise — same open-redirect protection as /signin/magic. NextAuth
+  // itself validates server-side against NEXTAUTH_URL, but the client-
+  // side `router.replace(callbackUrl)` in onGuest re-opens the hole
+  // without this allow-list.
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"))
   const errorCode = searchParams.get("error")
 
   const [email, setEmail] = useState("")
