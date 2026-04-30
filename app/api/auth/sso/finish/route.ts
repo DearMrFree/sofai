@@ -33,7 +33,10 @@ const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 
 function safeRelativeNext(raw: string | null): string {
   if (!raw) return "/"
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/"
+  // Reject ``//`` (protocol-relative) AND ``/\`` — WHATWG URL parser
+  // normalises backslashes to forward slashes for http/https, so
+  // ``/\\evil.com`` resolves to ``https://evil.com/`` (open redirect).
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/"
   if (/[\u0000-\u001f]/.test(raw)) return "/"
   return raw
 }
