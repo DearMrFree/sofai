@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { displayNameFromEmail, generatePersona } from "@/lib/persona"
 import { verifyMagicLinkToken } from "@/lib/auth/magic-link"
 import { isAdminEmail } from "@/lib/admin-allowlist"
+import { touchUserProfile } from "@/lib/users"
 
 const hasGoogle =
   !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET
@@ -107,6 +108,26 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    /**
+     * Runs after every successful authorize() / OAuth callback. We use
+     * it to fan out a single best-effort upsert into the shared
+     * Postgres so the Pioneer's identity exists across all three
+     * sister sites (sof.ai, ai.thevrschool.org, www.thevrschool.org)
+     * the moment they sign in here — even before they fill in the
+     * /welcome wizard. Returning true (always, here) lets the sign-in
+     * proceed regardless of whether the upsert succeeded; the helper
+     * swallows network/auth failures and logs them.
+     */
+    async signIn({ user }) {
+      if (user?.email) {
+        await touchUserProfile({
+          email: user.email,
+          displayName: user.name ?? null,
+          source: "sof.ai",
+        })
+      }
+      return true
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
