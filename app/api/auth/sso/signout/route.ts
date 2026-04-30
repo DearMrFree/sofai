@@ -35,7 +35,10 @@ const TRUSTED_NEXT_HOSTS = new Set([
 
 function resolveNext(raw: string | null, requestUrl: string): string {
   if (!raw) return new URL("/", requestUrl).toString()
-  if (raw.startsWith("/") && !raw.startsWith("//")) {
+  // Reject ``//`` (protocol-relative) AND ``/\`` — WHATWG URL parser
+  // normalises backslashes to forward slashes for http/https, so
+  // ``/\\evil.com`` resolves to ``https://evil.com/`` (open redirect).
+  if (raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")) {
     // Strip control chars + CR/LF that could be smuggled into the
     // ``Location`` header. Without this, ``?next=/%0d%0aSet-Cookie:…``
     // could either crash Node's HTTP layer (preventing cookie clear)
