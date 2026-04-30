@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
+import { usePathname } from "next/navigation"
 import { LogOut, ShieldCheck, User } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { buildHandoffUrl, buildSignOutChain } from "@/lib/sso/canonical"
 
 /**
  * Sign-in surface in the navbar. Three states:
@@ -15,6 +17,7 @@ import { cn } from "@/lib/utils"
  */
 export function AuthButton() {
   const { data: session, status } = useSession()
+  const pathname = usePathname() ?? "/"
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
 
@@ -47,9 +50,13 @@ export function AuthButton() {
   }
 
   if (!session?.user) {
+    // Deep-link to the canonical auth surface so SSO is the default
+    // path. Sister-site `sof.ai` doesn't own auth — it just consumes
+    // a bridge token. Local /signin still exists as a fallback for
+    // guest mode + when AI School is unreachable.
     return (
       <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-        <Link href="/signin">Sign in</Link>
+        <a href={buildHandoffUrl(pathname)}>Sign in</a>
       </Button>
     )
   }
@@ -120,7 +127,11 @@ export function AuthButton() {
             role="menuitem"
             onClick={() => {
               setOpen(false)
-              void signOut({ callbackUrl: "/" })
+              // Fan-out chain: clear sof.ai cookie -> hop to canonical
+              // signout (clears .thevrschool.org cookie covering both
+              // ai. + apex) -> bounce home. One full sign-out, three
+              // sites cleared.
+              window.location.href = buildSignOutChain("/")
             }}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-muted/60"
           >
