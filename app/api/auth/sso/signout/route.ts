@@ -45,6 +45,12 @@ function resolveNext(raw: string | null, requestUrl: string): string {
   }
   try {
     const u = new URL(raw)
+    // Reject non-HTTP(S) schemes. ``new URL('javascript://sof.ai/…').host``
+    // evaluates to ``sof.ai`` so the trusted-host check alone would let
+    // ``javascript:``/``data:``/``file:`` URLs through.
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      return new URL("/", requestUrl).toString()
+    }
     if (TRUSTED_NEXT_HOSTS.has(u.host.toLowerCase())) {
       return u.toString()
     }
