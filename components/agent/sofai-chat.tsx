@@ -4,6 +4,7 @@
     FormEvent,
     KeyboardEvent,
     ReactNode,
+    useCallback,
     useEffect,
     useRef,
     useState,
@@ -15,8 +16,10 @@
     GraduationCap,
     Landmark,
     Loader2,
+    RefreshCw,
     Send,
     Sparkles,
+    Trash2,
     X,
   } from "lucide-react"
   import { cn } from "@/lib/utils"
@@ -24,11 +27,13 @@
   import { SITE } from "@/lib/site-config"
 
   type ChatRole = "assistant" | "user"
-  type ChatMessage = { id: string; role: ChatRole; content: string }
+  type ChatMessage = { id: string; role: ChatRole; content: string; failed?: boolean }
+
+  const SESSION_KEY = "sofai-v1-messages"
 
   const PIONEER_QUOTES = [
-    { quote: SITE.founder.quote, name: SITE.founder.name, title: "Founder, School of Freedom" },
-    { quote: SITE.founder.quote2, name: SITE.founder.name, title: "Architect of the movement" },
+    { quote: SITE.founder.quote, title: "Founder, School of Freedom" },
+    { quote: SITE.founder.quote2, title: "Architect of the movement" },
   ]
 
   const PATHS = [
@@ -63,6 +68,68 @@
     { pattern: /(?:www\.)?thevrschool\.org(?!\/corporate|\/schools)/i, href: "https://www.thevrschool.org", label: "The VR School", desc: "WASC-accredited immersive VR education.", cta: "Open →" },
     { pattern: /ai\.thevrschool\.org/i, href: "https://ai.thevrschool.org", label: "School of AI", desc: "AI-native learning built around proof of work.", cta: "Open →" },
   ]
+
+  const FOLLOW_UP_MAP: Array<{ pattern: RegExp; questions: [string, string, string] }> = [
+    {
+      pattern: /vr school|virtual reality|wasc|accredit|uc a.g/i,
+      questions: [
+        "How does WASC accreditation benefit VR School students?",
+        "Can students from any country enroll in The VR School?",
+        "How is VR School graded and assessed?",
+      ],
+    },
+    {
+      pattern: /school of ai|agentic|devin|claude|gemini|pull request|cohort/i,
+      questions: [
+        "How is School of AI different from a coding bootcamp?",
+        "What do students actually build at School of AI?",
+        "How does learning alongside AI agents work?",
+      ],
+    },
+    {
+      pattern: /apply|pioneer|application|slug|approved/i,
+      questions: [
+        "What makes a strong Pioneer application?",
+        "How long does the application review take?",
+        "What does my profile look like after I'm approved?",
+      ],
+    },
+    {
+      pattern: /corporate|sponsor|company|workforce|partner|hiring/i,
+      questions: [
+        "What does a corporate sponsorship package include?",
+        "Can companies hire directly from School of Freedom graduates?",
+        "How do we connect our workforce needs to the talent pipeline?",
+      ],
+    },
+    {
+      pattern: /profile|identity|sign.?in|account|create|login/i,
+      questions: [
+        "What goes on my sof.ai mission profile?",
+        "Can I use one profile across The VR School and School of AI?",
+        "How do I customize my public profile page?",
+      ],
+    },
+    {
+      pattern: /movement thinking|philosophy|freedom cheteni|moonshot|unesco/i,
+      questions: [
+        "How did Dr. Freedom Cheteni develop Movement Thinking?",
+        "What was the Moonshot Innovation Diploma?",
+        "How does the UNESCO Inclusive Policy Lab connect to sof.ai?",
+      ],
+    },
+  ]
+
+  function getSuggestedFollowUps(text: string): string[] {
+    for (const { pattern, questions } of FOLLOW_UP_MAP) {
+      if (pattern.test(text)) return [...questions]
+    }
+    return [
+      "What's my very first step to getting started?",
+      "How is School of Freedom different from a traditional university?",
+      "Tell me about Dr. Freedom Cheteni and his mission.",
+    ]
+  }
 
   function renderInline(text: string, kp: string): ReactNode[] {
     const parts: ReactNode[] = []
@@ -132,17 +199,64 @@
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [messages, setMessages] = useState<ChatMessage[]>([])
+    const [followUps, setFollowUps] = useState<string[]>([])
     const [quoteIdx] = useState(() => Math.floor(Math.random() * PIONEER_QUOTES.length))
     const endRef = useRef<HTMLDivElement | null>(null)
     const taRef = useRef<HTMLTextAreaElement | null>(null)
 
+    // Session persistence — restore on mount
+    useEffect(() => {
+      try {
+        const saved = sessionStorage.getItem(SESSION_KEY)
+        if (saved) {
+          const parsed = JSON.parse(saved) as ChatMessage[]
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed)
+            setStarted(true)
+          }
+        }
+      } catch {}
+    }, [])
+
+    // Session persistence — save on every message update
+    useEffect(() => {
+      if (messages.length > 0) {
+        try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages)) } catch {}
+      }
+    }, [messages])
+
+    // Keyboard shortcuts: Cmd/Ctrl+K to open·close, Escape to close
+    useEffect(() => {
+      function onKey(e: globalThis.KeyboardEvent) {
+        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+          if (document.activeElement?.tagName === "TEXTAREA") return
+          e.preventDefault()
+          if (isOpen) close(); else open()
+        }
+        if (e.key === "Escape" && isOpen) close()
+      }
+      window.addEventListener("keydown", onKey)
+      return () => window.removeEventListener("keydown", onKey)
+    }, [isOpen, open, close])
+
+    // Auto-focus textarea when panel opens
+    useEffect(() => {
+      if (isOpen) {
+        const t = setTimeout(() => taRef.current?.focus(), 280)
+        return () => clearTimeout(t)
+      }
+    }, [isOpen])
+
+    // Scroll to bottom on new messages
     useEffect(() => { if (isOpen) endRef.current?.scrollIntoView({ block: "end" }) }, [isOpen, messages])
 
+    // Auto-resize textarea
     useEffect(() => {
       const ta = taRef.current
       if (ta) { ta.style.height = "auto"; ta.style.height = `${Math.min(ta.scrollHeight, 112)}px` }
     }, [input])
 
+    // Fire pending message from AskSofAI buttons
     useEffect(() => {
       if (pendingMessage && isOpen) {
         void submitMessage(undefined, pendingMessage)
@@ -151,11 +265,19 @@
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingMessage, isOpen])
 
+    const clearConversation = useCallback(() => {
+      setMessages([])
+      setStarted(false)
+      setFollowUps([])
+      try { sessionStorage.removeItem(SESSION_KEY) } catch {}
+    }, [])
+
     async function submitMessage(event?: FormEvent<HTMLFormElement>, preset?: string) {
       event?.preventDefault()
       const content = (preset ?? input).trim()
       if (!content || isLoading) return
       if (!started) setStarted(true)
+      setFollowUps([])
 
       const ts = Date.now()
       const userMsg: ChatMessage = { id: `u${ts}`, role: "user", content }
@@ -167,6 +289,7 @@
       setInput("")
       setIsLoading(true)
 
+      let finalText = ""
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
@@ -177,23 +300,23 @@
           const p = (await res.json().catch(() => null)) as { error?: string } | null
           throw new Error(p?.error ?? "SofAI could not answer that.")
         }
-        if (!res.body) throw new Error("No response from SofAI.")
+        if (!res.body) throw new Error("No response stream from SofAI.")
 
         const reader = res.body.getReader()
         const dec = new TextDecoder()
-        let text = ""
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          text += dec.decode(value, { stream: true })
-          setMessages(c => c.map(m => m.id === asstId ? { ...m, content: text } : m))
+          finalText += dec.decode(value, { stream: true })
+          setMessages(c => c.map(m => m.id === asstId ? { ...m, content: finalText } : m))
         }
-        const trail = dec.decode()
-        if (trail) text += trail
-        setMessages(c => c.map(m => m.id === asstId ? { ...m, content: text.trim() || "I heard you, but couldn't form a full answer. Try again." } : m))
+        finalText += dec.decode()
+        finalText = finalText.trim() || "I heard you, but couldn't form a full answer. Please try again."
+        setMessages(c => c.map(m => m.id === asstId ? { ...m, content: finalText } : m))
+        setFollowUps(getSuggestedFollowUps(finalText))
       } catch (err) {
         const msg = err instanceof Error ? err.message : "SofAI is unavailable right now."
-        setMessages(c => c.map(m => m.id === asstId ? { ...m, content: msg } : m))
+        setMessages(c => c.map(m => m.id === asstId ? { ...m, content: msg, failed: true } : m))
       } finally {
         setIsLoading(false)
       }
@@ -210,13 +333,14 @@
       <>
         {/* Trigger */}
         {!isOpen && (
-          <button aria-label="Open SofAI" type="button"
-            className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-white transition-all duration-300 hover:scale-105 sm:bottom-6 sm:right-6"
+          <button aria-label="Open SofAI (⌘K)" type="button"
+            className="fixed bottom-5 right-5 z-50 group flex items-center gap-2.5 rounded-2xl px-4 py-3 text-white transition-all duration-300 hover:scale-105 sm:bottom-6 sm:right-6"
             style={{ background: "linear-gradient(135deg,#065f46 0%,#047857 60%,#064e3b 100%)", boxShadow: "0 8px 32px rgba(4,120,87,0.45)" }}
             onClick={() => open()}>
             <span className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-emerald-400/30 animate-ping" />
             <Sparkles className="size-4 shrink-0" />
             <span className="text-sm font-semibold tracking-wide">Ask SofAI</span>
+            <span className="hidden sm:inline ml-0.5 rounded border border-white/25 bg-white/10 px-1.5 py-0.5 font-mono text-[9px] text-white/60 group-hover:text-white/80 transition">⌘K</span>
           </button>
         )}
 
@@ -225,6 +349,7 @@
           <section aria-label="SofAI" className="fixed inset-3 z-50 flex min-h-0 flex-col overflow-hidden rounded-2xl sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[680px] sm:max-h-[calc(100vh-3rem)] sm:w-[440px]"
             style={{ animation: "sofai-up 0.3s cubic-bezier(0.34,1.56,0.64,1) both", boxShadow: "0 32px 96px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1)" }}>
 
+            {/* Header */}
             <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 text-white"
               style={{ background: "linear-gradient(135deg,#065f46 0%,#064e3b 55%,#111827 100%)" }}>
               <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -239,15 +364,27 @@
                   <p className="mt-0.5 text-[11px] text-white/60">{SITE.stats.pioneers} Pioneers · {SITE.stats.countries} Countries · {SITE.stats.accreditation} Accredited</p>
                 </div>
               </div>
-              <button aria-label="Close" onClick={close} type="button"
-                className="relative flex size-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"><X className="size-4" /></button>
+              <div className="relative flex items-center gap-1">
+                {started && (
+                  <button aria-label="Clear conversation" onClick={clearConversation} type="button"
+                    className="flex size-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/80" title="Clear conversation">
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+                <button aria-label="Close (Esc)" onClick={close} type="button"
+                  className="flex size-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white">
+                  <X className="size-4" />
+                </button>
+              </div>
             </header>
 
+            {/* Messages */}
             <div className="relative min-h-0 flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#e7e0d2 transparent" }}>
               <div className="pointer-events-none absolute inset-0"
                 style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%,rgba(4,120,87,0.06) 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 100% 100%,rgba(217,119,6,0.04) 0%,transparent 70%),#fffaf0" }} />
 
               <div className="relative px-4 py-4">
+                {/* Welcome screen */}
                 {!started && (
                   <div className="flex flex-col gap-4" style={{ animation: "sofai-in 0.35s ease both" }}>
                     <div className="rounded-2xl border border-[#e7e0d2] bg-white p-5 shadow-sm">
@@ -260,7 +397,7 @@
                       <p className="text-[12px] italic leading-relaxed text-[#57534e]">"{quote.quote}"</p>
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex size-6 items-center justify-center rounded-full bg-stone-950 font-serif text-[10px] text-white">FC</div>
-                        <div><p className="text-[11px] font-semibold text-[#18181b]">{quote.name}</p><p className="text-[10px] text-[#a8a29e]">{quote.title}</p></div>
+                        <div><p className="text-[11px] font-semibold text-[#18181b]">{SITE.founder.name}</p><p className="text-[10px] text-[#a8a29e]">{quote.title}</p></div>
                       </div>
                     </div>
 
@@ -292,17 +429,20 @@
                   </div>
                 )}
 
+                {/* Conversation */}
                 {started && (
                   <div className="flex flex-col gap-3">
                     {messages.map((msg, i) => {
                       const isUser = msg.role === "user"
-                      const cards = !isUser && msg.content ? extractCtas(msg.content) : []
+                      const isLastAsst = !isUser && i === messages.length - 1
+                      const cards = !isUser && msg.content && !msg.failed ? extractCtas(msg.content) : []
                       return (
                         <div key={msg.id} className="flex flex-col gap-1.5" style={{ animation: `sofai-in 0.2s ease both ${Math.min(i * 0.03, 0.15)}s` }}>
                           <div className={cn("flex gap-2", isUser ? "justify-end" : "items-end justify-start")}>
                             {!isUser && <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-900"><Sparkles className="size-3 text-white" /></div>}
                             <div className={cn("group relative max-w-[84%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
-                              isUser ? "rounded-br-sm text-white" : "rounded-bl-sm border border-[#e7e0d2] bg-white text-[#18181b] shadow-sm")}
+                              isUser ? "rounded-br-sm text-white" : "rounded-bl-sm border border-[#e7e0d2] bg-white text-[#18181b] shadow-sm",
+                              msg.failed ? "border-red-200 bg-red-50" : "")}
                               style={isUser ? { background: "linear-gradient(135deg,#065f46 0%,#047857 100%)" } : undefined}>
                               {msg.content
                                 ? isUser
@@ -312,9 +452,25 @@
                                     {[0, 130, 260].map(d => <span key={d} className="size-2 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
                                   </div>
                               }
-                              {msg.content && !isUser && <div className="absolute -bottom-5 right-0 opacity-0 transition group-hover:opacity-100"><CopyBtn text={msg.content} /></div>}
+                              {msg.content && !isUser && !msg.failed && (
+                                <div className="absolute -bottom-5 right-0 opacity-0 transition group-hover:opacity-100"><CopyBtn text={msg.content} /></div>
+                              )}
+                              {msg.failed && (
+                                <button type="button"
+                                  className="mt-2 flex items-center gap-1 text-[11px] text-red-600 hover:text-red-800 transition"
+                                  onClick={() => {
+                                    const lastUser = [...messages].reverse().find(m => m.role === "user")
+                                    if (lastUser) {
+                                      setMessages(prev => prev.filter(m => m.id !== msg.id))
+                                      void submitMessage(undefined, lastUser.content)
+                                    }
+                                  }}>
+                                  <RefreshCw className="size-3" /> Retry
+                                </button>
+                              )}
                             </div>
                           </div>
+                          {/* CTA cards under AI messages */}
                           {cards.length > 0 && (
                             <div className="ml-8 flex flex-col gap-2" style={{ animation: "sofai-in 0.25s ease both 0.15s" }}>
                               {cards.map(card => (
@@ -327,6 +483,19 @@
                               ))}
                             </div>
                           )}
+                          {/* Follow-up suggestions after last AI message */}
+                          {isLastAsst && followUps.length > 0 && !isLoading && (
+                            <div className="ml-8 mt-1 flex flex-col gap-1.5" style={{ animation: "sofai-in 0.35s ease both 0.2s" }}>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-[#b4aca2]">Ask next</p>
+                              {followUps.map(q => (
+                                <button key={q} type="button"
+                                  className="w-full rounded-xl border border-[#e7e0d2] bg-white px-3.5 py-2.5 text-left text-[12px] text-[#3d3730] shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-900"
+                                  onClick={() => void submitMessage(undefined, q)}>
+                                  {q}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
@@ -336,6 +505,7 @@
               </div>
             </div>
 
+            {/* Persistent CTA after 2+ exchanges */}
             {userMsgCount >= 2 && (
               <div className="shrink-0 border-t border-emerald-100 px-4 py-3" style={{ background: "linear-gradient(90deg,rgba(4,120,87,0.07) 0%,rgba(217,119,6,0.04) 100%)", animation: "sofai-in 0.3s ease both" }}>
                 <div className="flex items-center justify-between gap-3">
@@ -347,11 +517,12 @@
               </div>
             )}
 
+            {/* Input */}
             <form className="shrink-0 border-t border-[#e7e0d2] bg-white px-3 py-3" onSubmit={submitMessage}>
               <div className="flex items-end gap-2 rounded-xl border border-[#e7e0d2] bg-[#fffaf0] px-3 py-2 transition-shadow focus-within:border-emerald-500 focus-within:shadow-[0_0_0_3px_rgba(4,120,87,0.1)]">
                 <textarea ref={taRef} aria-label="Ask SofAI" rows={1} value={input}
                   className="max-h-28 min-h-[28px] flex-1 resize-none bg-transparent text-sm leading-6 text-[#18181b] outline-none placeholder:text-[#b4aca2]"
-                  placeholder={started ? "Ask anything…" : "Or type your question…"}
+                  placeholder={started ? "Ask anything… (Shift+Enter for new line)" : "Or type your question…"}
                   onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} />
                 <button aria-label="Send" type="submit" disabled={!input.trim() || isLoading}
                   className={cn("mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all", input.trim() && !isLoading ? "text-white" : "cursor-not-allowed bg-[#f0e9d8] text-[#b4aca2]")}
@@ -359,7 +530,7 @@
                   {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
                 </button>
               </div>
-              <p className="mt-2 text-center text-[10px] text-[#b4aca2]">SofAI · School of Freedom · sof.ai</p>
+              <p className="mt-1.5 text-center text-[10px] text-[#b4aca2]">SofAI · School of Freedom · sof.ai &nbsp;·&nbsp; <kbd className="rounded border border-[#e7e0d2] bg-[#f5efe2] px-1 py-0.5 font-mono text-[9px]">Esc</kbd> to close</p>
             </form>
           </section>
         )}
