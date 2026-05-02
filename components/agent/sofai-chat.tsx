@@ -3,6 +3,7 @@
   import {
     FormEvent,
     KeyboardEvent,
+    ReactNode,
     useEffect,
     useRef,
     useState,
@@ -63,8 +64,8 @@
     { pattern: /ai\.thevrschool\.org/i, href: "https://ai.thevrschool.org", label: "School of AI", desc: "AI-native learning built around proof of work.", cta: "Open →" },
   ]
 
-  function renderInline(text: string, kp: string) {
-    const parts: React.ReactNode[] = []
+  function renderInline(text: string, kp: string): ReactNode[] {
+    const parts: ReactNode[] = []
     const re = /(\*\*(.+?)\*\*|\*([^*]+?)\*|\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s,;)>]+))/g
     let last = 0, m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
@@ -86,7 +87,7 @@
 
   function MarkdownMsg({ text, kp }: { text: string; kp: string }) {
     const lines = text.split("\n")
-    const nodes: React.ReactNode[] = []
+    const nodes: ReactNode[] = []
     let i = 0
     while (i < lines.length) {
       const line = lines[i]!
@@ -135,16 +136,13 @@
     const endRef = useRef<HTMLDivElement | null>(null)
     const taRef = useRef<HTMLTextAreaElement | null>(null)
 
-    // Auto-scroll
     useEffect(() => { if (isOpen) endRef.current?.scrollIntoView({ block: "end" }) }, [isOpen, messages])
 
-    // Auto-resize textarea
     useEffect(() => {
       const ta = taRef.current
       if (ta) { ta.style.height = "auto"; ta.style.height = `${Math.min(ta.scrollHeight, 112)}px` }
     }, [input])
 
-    // Handle pending message from any page AskSofAI button
     useEffect(() => {
       if (pendingMessage && isOpen) {
         void submitMessage(undefined, pendingMessage)
@@ -227,7 +225,6 @@
           <section aria-label="SofAI" className="fixed inset-3 z-50 flex min-h-0 flex-col overflow-hidden rounded-2xl sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[680px] sm:max-h-[calc(100vh-3rem)] sm:w-[440px]"
             style={{ animation: "sofai-up 0.3s cubic-bezier(0.34,1.56,0.64,1) both", boxShadow: "0 32px 96px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1)" }}>
 
-            {/* Header */}
             <header className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 text-white"
               style={{ background: "linear-gradient(135deg,#065f46 0%,#064e3b 55%,#111827 100%)" }}>
               <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -246,13 +243,11 @@
                 className="relative flex size-8 items-center justify-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-white"><X className="size-4" /></button>
             </header>
 
-            {/* Body */}
             <div className="relative min-h-0 flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#e7e0d2 transparent" }}>
               <div className="pointer-events-none absolute inset-0"
                 style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%,rgba(4,120,87,0.06) 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 100% 100%,rgba(217,119,6,0.04) 0%,transparent 70%),#fffaf0" }} />
 
               <div className="relative px-4 py-4">
-                {/* Welcome manifesto */}
                 {!started && (
                   <div className="flex flex-col gap-4" style={{ animation: "sofai-in 0.35s ease both" }}>
                     <div className="rounded-2xl border border-[#e7e0d2] bg-white p-5 shadow-sm">
@@ -283,7 +278,11 @@
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
-                      {[{ val: SITE.stats.pioneers, label: "Pioneers" }, { val: SITE.stats.countries, label: "Countries" }, { val: SITE.stats.accreditation, label: "Accredited" }].map(({ val, label }) => (
+                      {[
+                        { val: SITE.stats.pioneers, label: "Pioneers" },
+                        { val: SITE.stats.countries, label: "Countries" },
+                        { val: SITE.stats.accreditation, label: "Accredited" },
+                      ].map(({ val, label }) => (
                         <div key={label} className="rounded-lg border border-[#e7e0d2] bg-white py-2.5 text-center shadow-sm">
                           <p className="font-serif text-lg text-[#18181b]">{val}</p>
                           <p className="text-[10px] text-[#a8a29e]">{label}</p>
@@ -293,7 +292,6 @@
                   </div>
                 )}
 
-                {/* Conversation */}
                 {started && (
                   <div className="flex flex-col gap-3">
                     {messages.map((msg, i) => {
@@ -338,7 +336,6 @@
               </div>
             </div>
 
-            {/* Join banner */}
             {userMsgCount >= 2 && (
               <div className="shrink-0 border-t border-emerald-100 px-4 py-3" style={{ background: "linear-gradient(90deg,rgba(4,120,87,0.07) 0%,rgba(217,119,6,0.04) 100%)", animation: "sofai-in 0.3s ease both" }}>
                 <div className="flex items-center justify-between gap-3">
@@ -350,7 +347,6 @@
               </div>
             )}
 
-            {/* Input */}
             <form className="shrink-0 border-t border-[#e7e0d2] bg-white px-3 py-3" onSubmit={submitMessage}>
               <div className="flex items-end gap-2 rounded-xl border border-[#e7e0d2] bg-[#fffaf0] px-3 py-2 transition-shadow focus-within:border-emerald-500 focus-within:shadow-[0_0_0_3px_rgba(4,120,87,0.1)]">
                 <textarea ref={taRef} aria-label="Ask SofAI" rows={1} value={input}
