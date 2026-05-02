@@ -7,6 +7,7 @@ import "./globals.css"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { SofaiChat } from "@/components/agent/sofai-chat"
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -84,6 +85,7 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1 flex flex-col">{children}</main>
           <Footer />
+          <SofaiChat />
         </SessionProvider>
       </body>
     </html>
