@@ -14,17 +14,9 @@ import Link from "next/link"
     const Icon = ICONS[audience]
     const profileHref = buildHandoffUrl("/settings")
 
-    const primaryHref = cfg.cta.primary.href.startsWith("http")
-      ? cfg.cta.primary.href
-      : cfg.cta.primary.href === "/signin"
-      ? profileHref
-      : cfg.cta.primary.href
-
-    const secondaryHref = cfg.cta.secondary.href.startsWith("http")
-      ? cfg.cta.secondary.href
-      : cfg.cta.secondary.href === "/apply"
-      ? "/apply"
-      : profileHref
+    // Use profile href for "create profile" CTAs (signin redirects through the SSO layer)
+    const primaryHref = audience === "individuals" ? profileHref : cfg.cta.primary.href
+    const secondaryHref = cfg.cta.secondary.href
 
     return (
       <section className="mx-auto max-w-6xl px-4 py-14 lg:px-8 lg:py-20">
@@ -48,7 +40,7 @@ import Link from "next/link"
               </Button>
               <Button asChild size="xl" variant="outline">
                 {secondaryHref.startsWith("http")
-                  ? <a href={secondaryHref}>{cfg.cta.secondary.label}</a>
+                  ? <a href={secondaryHref} target="_blank" rel="noopener noreferrer">{cfg.cta.secondary.label}</a>
                   : <Link href={secondaryHref}>{cfg.cta.secondary.label}</Link>
                 }
               </Button>

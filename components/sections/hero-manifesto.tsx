@@ -6,14 +6,14 @@ import Link from "next/link"
   import { buildHandoffUrl } from "@/lib/sso/canonical"
   import { SITE } from "@/lib/site-config"
 
-  const heroStats = [
-    { label: "Unified profile", value: SITE.stats.pioneers.replace("+","") === SITE.stats.pioneers ? SITE.stats.pioneers : "1", icon: UserRound },
+  const HERO_STATS = [
+    { label: "Unified profile", value: "1", icon: UserRound },
     { label: "Global learners", value: SITE.stats.pioneers, icon: Globe2 },
     { label: "Countries", value: SITE.stats.countries, icon: Sparkles },
     { label: "WASC pathway", value: SITE.stats.accreditation, icon: BadgeCheck },
   ]
 
-  const audienceLinks = [
+  const AUDIENCE_LINKS = [
     { href: "/individuals", label: "Individuals" },
     { href: "/corporations", label: "Corporations" },
     { href: "/institutions", label: "Schools & entities" },
@@ -45,7 +45,7 @@ import Link from "next/link"
             {SITE.name}
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/78 sm:text-xl">
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl">
             {SITE.description}
           </p>
 
@@ -57,13 +57,10 @@ import Link from "next/link"
             </Button>
             <Button asChild size="xl" variant="outline"
               className="border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white">
-              <Link href="/apply">
-                Apply as a Pioneer
-              </Link>
+              <Link href="/apply">Apply as a Pioneer</Link>
             </Button>
           </div>
 
-          {/* Contextual chat link */}
           <div className="mt-6">
             <AskSofAI
               prompt="I just landed on sof.ai. Give me a 30-second overview of what School of Freedom is and how I can get started."
@@ -73,15 +70,9 @@ import Link from "next/link"
             />
           </div>
 
-          {/* Stats */}
           <div className="mt-10 grid max-w-lg grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: "Unified profile", value: "1", icon: UserRound },
-              { label: "Global learners", value: SITE.stats.pioneers, icon: Globe2 },
-              { label: "Countries", value: SITE.stats.countries, icon: Sparkles },
-              { label: "WASC pathway", value: SITE.stats.accreditation, icon: BadgeCheck },
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="rounded-lg border border-white/15 bg-white/8 px-3 py-2.5 backdrop-blur">
+            {HERO_STATS.map(({ label, value, icon: Icon }) => (
+              <div key={label} className="rounded-lg border border-white/15 bg-white/[0.08] px-3 py-2.5 backdrop-blur">
                 <Icon className="h-4 w-4 text-emerald-300" aria-hidden="true" />
                 <p className="mt-1.5 font-serif text-xl text-white">{value}</p>
                 <p className="text-[11px] text-white/60">{label}</p>
@@ -89,9 +80,8 @@ import Link from "next/link"
             ))}
           </div>
 
-          {/* Audience tabs */}
           <div className="mt-8 flex flex-wrap gap-2">
-            {audienceLinks.map(({ href, label }) => (
+            {AUDIENCE_LINKS.map(({ href, label }) => (
               <Link key={href} href={href}
                 className="rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white/80 backdrop-blur transition hover:bg-white/20 hover:text-white">
                 {label}
@@ -99,7 +89,6 @@ import Link from "next/link"
             ))}
           </div>
 
-          {/* Scroll hint */}
           <div className="mt-14 flex items-center gap-2 text-white/40">
             <ArrowDown className="h-4 w-4 animate-bounce" aria-hidden="true" />
             <span className="font-mono text-[11px] uppercase tracking-widest">Scroll to explore</span>
