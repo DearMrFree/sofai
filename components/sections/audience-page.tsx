@@ -1,163 +1,95 @@
 import Link from "next/link"
-import {
-  ArrowRight,
-  BadgeCheck,
-  Building2,
-  GraduationCap,
-  Landmark,
-  Mail,
-  UserRound,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { buildHandoffUrl } from "@/lib/sso/canonical"
+  import { ArrowRight, Building2, Landmark, UserRound } from "lucide-react"
+  import { Button } from "@/components/ui/button"
+  import { AskSofAI } from "@/components/agent/ask-sofai"
+  import { buildHandoffUrl } from "@/lib/sso/canonical"
+  import { SITE } from "@/lib/site-config"
 
-type AudienceKey = "individuals" | "corporations" | "institutions"
+  type AudienceKey = "individuals" | "corporations" | "institutions"
 
-const pages = {
-  individuals: {
-    eyebrow: "For individuals",
-    icon: UserRound,
-    title: "Create a mission profile that moves with you.",
-    intro:
-      "Students, founders, educators, builders, and curious learners can start with one School of AI identity, then use SofAI as their profile, application, and learning gateway.",
-    primaryLabel: "Create profile",
-    primaryHref: "profile",
-    secondaryLabel: "Apply to a pathway",
-    secondaryHref: "/apply",
-    points: [
-      "Claim a public sof.ai profile for your mission and work.",
-      "Move into The VR School or School of AI without a separate identity.",
-      "Use SofAI to ask questions about schools, lessons, and next steps.",
-    ],
-  },
-  corporations: {
-    eyebrow: "For corporations",
-    icon: Building2,
-    title: "Partner with a school network built around proof of work.",
-    intro:
-      "Companies can sponsor learners, fund challenge-based cohorts, support scholarships, and connect workforce needs to AI and VR learning environments.",
-    primaryLabel: "Start corporate partnership",
-    primaryHref: "https://www.thevrschool.org/corporate-giving",
-    secondaryLabel: "Create profile",
-    secondaryHref: "profile",
-    points: [
-      "Sponsor scholarships, cohorts, labs, or public learning challenges.",
-      "Connect business problems to student portfolios and agentic projects.",
-      "Support education while building a deeper talent and impact pipeline.",
-    ],
-  },
-  institutions: {
-    eyebrow: "For schools & entities",
-    icon: Landmark,
-    title: "Bring Movement Thinking into your school, district, or entity.",
-    intro:
-      "Schools, districts, nonprofits, foundations, and public programs can connect to accredited VR education, AI-native learning, and unified learner profiles.",
-    primaryLabel: "Talk to schools team",
-    primaryHref: "https://www.thevrschool.org/schools-districts",
-    secondaryLabel: "Create profile",
-    secondaryHref: "profile",
-    points: [
-      "Explore school, district, and organizational partnership models.",
-      "Route learners into accredited VR pathways or AI-native build tracks.",
-      "Use SofAI as the guided entry point for families, teams, and partners.",
-    ],
-  },
-} satisfies Record<
-  AudienceKey,
-  {
-    eyebrow: string
-    icon: typeof UserRound
-    title: string
-    intro: string
-    primaryLabel: string
-    primaryHref: string
-    secondaryLabel: string
-    secondaryHref: string
-    points: string[]
-  }
->
+  const ICONS = { individuals: UserRound, corporations: Building2, institutions: Landmark }
 
-export function AudiencePage({ audience }: { audience: AudienceKey }) {
-  const config = pages[audience]
-  const Icon = config.icon
-  const profileHref = buildHandoffUrl("/settings")
-  const primaryHref =
-    config.primaryHref === "profile" ? profileHref : config.primaryHref
-  const secondaryHref =
-    config.secondaryHref === "profile" ? profileHref : config.secondaryHref
+  export function AudiencePage({ audience }: { audience: AudienceKey }) {
+    const cfg = SITE.paths[audience]
+    const Icon = ICONS[audience]
+    const profileHref = buildHandoffUrl("/settings")
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-14 lg:px-8 lg:py-20">
-      <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
-        <div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-stone-950 text-white">
-            <Icon className="h-6 w-6" aria-hidden="true" />
+    const primaryHref = cfg.cta.primary.href.startsWith("http")
+      ? cfg.cta.primary.href
+      : cfg.cta.primary.href === "/signin"
+      ? profileHref
+      : cfg.cta.primary.href
+
+    const secondaryHref = cfg.cta.secondary.href.startsWith("http")
+      ? cfg.cta.secondary.href
+      : cfg.cta.secondary.href === "/apply"
+      ? "/apply"
+      : profileHref
+
+    return (
+      <section className="mx-auto max-w-6xl px-4 py-14 lg:px-8 lg:py-20">
+        <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
+
+          {/* Left — headline + CTAs */}
+          <div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-stone-950 text-white">
+              <Icon className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <p className="mt-6 font-mono text-[11px] uppercase text-muted-foreground">{cfg.eyebrow}</p>
+            <h1 className="mt-4 font-serif text-5xl leading-tight text-foreground sm:text-6xl">{cfg.title}</h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">{cfg.description}</p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="xl">
+                <a href={primaryHref}>
+                  {cfg.cta.primary.label}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              </Button>
+              <Button asChild size="xl" variant="outline">
+                {secondaryHref.startsWith("http")
+                  ? <a href={secondaryHref}>{cfg.cta.secondary.label}</a>
+                  : <Link href={secondaryHref}>{cfg.cta.secondary.label}</Link>
+                }
+              </Button>
+            </div>
           </div>
-          <p className="mt-6 font-mono text-[11px] uppercase text-muted-foreground">
-            {config.eyebrow}
-          </p>
-          <h1 className="mt-4 font-serif text-5xl leading-tight text-foreground sm:text-6xl">
-            {config.title}
-          </h1>
-          <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-            {config.intro}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="xl">
-              <a href={primaryHref}>
-                {config.primaryLabel}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-            </Button>
-            <Button asChild size="xl" variant="outline">
-              {secondaryHref.startsWith("http") ? (
-                <a href={secondaryHref}>{config.secondaryLabel}</a>
-              ) : (
-                <Link href={secondaryHref}>{config.secondaryLabel}</Link>
-              )}
-            </Button>
-          </div>
-        </div>
 
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <div className="grid gap-4">
-            {config.points.map((point) => (
-              <div key={point} className="flex gap-3">
-                <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {point}
-                </p>
+          {/* Right — contextual SofAI panel (replaces static FAQ bullets) */}
+          <div className="flex flex-col gap-4">
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { val: SITE.stats.pioneers, label: "Pioneers" },
+                { val: SITE.stats.countries, label: "Countries" },
+                { val: SITE.stats.accreditation, label: "Accredited" },
+              ].map(({ val, label }) => (
+                <div key={label} className="rounded-lg border border-border bg-card py-3 text-center shadow-sm">
+                  <p className="font-serif text-xl text-foreground">{val}</p>
+                  <p className="text-[11px] text-muted-foreground">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick questions */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Common questions</p>
+              <div className="flex flex-wrap gap-2">
+                {cfg.quickPrompts.map(prompt => (
+                  <AskSofAI key={prompt} prompt={prompt} label={prompt} variant="pill" />
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <MiniMetric icon={UserRound} label="Identity" value="One profile" />
-            <MiniMetric icon={GraduationCap} label="Schools" value="VR + AI" />
-            <MiniMetric icon={Mail} label="Support" value="Guided" />
+            {/* Banner CTA */}
+            <AskSofAI
+              prompt={`Tell me everything about the ${cfg.eyebrow.toLowerCase()} path on School of Freedom.`}
+              label="Ask SofAI anything about this path"
+              variant="banner"
+            />
           </div>
         </div>
-      </div>
-    </section>
-  )
-}
-
-function MiniMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof UserRound
-  label: string
-  value: string
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/30 p-4">
-      <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-      <p className="mt-3 font-serif text-2xl leading-none text-foreground">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-    </div>
-  )
-}
+      </section>
+    )
+  }
+  
