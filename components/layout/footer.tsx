@@ -1,11 +1,14 @@
 import Link from "next/link"
 import { SISTER_SCHOOLS } from "@/lib/utils"
+import { buildHandoffUrl } from "@/lib/sso/canonical"
 
 export function Footer() {
   const year = new Date().getFullYear()
+  const profileHref = buildHandoffUrl("/settings")
+
   return (
     <footer className="border-t border-border/60 bg-muted/30">
-      <div className="mx-auto max-w-6xl px-4 lg:px-8 py-12 grid gap-10 md:grid-cols-4 text-sm">
+      <div className="mx-auto max-w-6xl px-4 lg:px-8 py-12 grid gap-10 md:grid-cols-5 text-sm">
         <div className="md:col-span-2">
           <p className="font-serif text-2xl text-foreground leading-tight">
             School of Freedom
@@ -18,6 +21,38 @@ export function Footer() {
           <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Founded by Dr. Freedom Cheteni
           </p>
+        </div>
+
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Audiences
+          </p>
+          <ul className="mt-3 space-y-2">
+            <li>
+              <Link
+                href="/individuals"
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                Individuals
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/corporations"
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                Corporations
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/institutions"
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                Schools & entities
+              </Link>
+            </li>
+          </ul>
         </div>
 
         <div>
@@ -46,16 +81,16 @@ export function Footer() {
 
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Movement
+            Start
           </p>
           <ul className="mt-3 space-y-2">
             <li>
-              <Link
-                href="/founder"
+              <a
+                href={profileHref}
                 className="text-foreground hover:text-primary transition-colors"
               >
-                Founder
-              </Link>
+                Sign up
+              </a>
             </li>
             <li>
               <Link
@@ -71,6 +106,14 @@ export function Footer() {
                 className="text-foreground hover:text-primary transition-colors"
               >
                 Apply
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/founder"
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                Founder
               </Link>
             </li>
           </ul>

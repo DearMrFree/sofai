@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AuthButton } from "@/components/layout/auth-button"
 import { cn } from "@/lib/utils"
+import { buildHandoffUrl } from "@/lib/sso/canonical"
 
 /**
  * Liquid routing — the navbar tags itself with a contextual identity that
@@ -19,6 +20,9 @@ function contextLabel(pathname: string): string {
   if (pathname === "/" || pathname === "") return "Movement"
   if (pathname === "/founder") return "The Architect"
   if (pathname === "/apply") return "Applicant"
+  if (pathname === "/individuals") return "Individuals"
+  if (pathname === "/corporations") return "Corporations"
+  if (pathname === "/institutions") return "Institutions"
   if (pathname === "/students") return "Pioneers"
   if (pathname === "/settings") return "Editor"
   if (pathname === "/admin") return "Steward"
@@ -28,15 +32,17 @@ function contextLabel(pathname: string): string {
 }
 
 const NAV_LINKS: { href: string; label: string }[] = [
-  { href: "/", label: "Manifesto" },
-  { href: "/founder", label: "Founder" },
-  { href: "/students", label: "Students" },
-  { href: "/apply", label: "Apply" },
+  { href: "/#pathways", label: "Pathways" },
+  { href: "/individuals", label: "Individuals" },
+  { href: "/corporations", label: "Corporations" },
+  { href: "/institutions", label: "Entities" },
+  { href: "/students", label: "Profiles" },
 ]
 
 export function Navbar() {
   const pathname = usePathname() || "/"
   const label = contextLabel(pathname)
+  const signUpHref = buildHandoffUrl("/settings")
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -65,7 +71,9 @@ export function Navbar() {
         <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Primary">
           {NAV_LINKS.map((link) => {
             const active =
-              link.href === "/"
+              link.href.startsWith("/#")
+                ? pathname === "/"
+                : link.href === "/"
                 ? pathname === "/"
                 : pathname === link.href || pathname.startsWith(link.href + "/")
             return (
@@ -95,7 +103,7 @@ export function Navbar() {
         <div className="ml-auto flex items-center gap-2 md:ml-2">
           <AuthButton />
           <Button asChild size="sm">
-            <Link href="/apply">Apply</Link>
+            <a href={signUpHref}>Sign up</a>
           </Button>
         </div>
       </div>

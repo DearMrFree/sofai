@@ -42,10 +42,15 @@ export function AuthButton() {
 
   if (status === "loading") {
     return (
-      <span
-        className="inline-flex h-9 w-20 items-center justify-center rounded-md bg-muted/60"
-        aria-hidden="true"
-      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="hidden opacity-60 sm:inline-flex"
+        disabled
+      >
+        Sign in
+      </Button>
     )
   }
 

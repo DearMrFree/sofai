@@ -127,10 +127,10 @@
     scroll-behavior: smooth;
   }
 
-  /* Editorial headings — manifesto serif, slight optical-size feel via tracking */
+  /* Editorial headings - manifesto serif without compressed tracking. */
   h1, h2, h3 {
     font-family: var(--font-serif);
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 
   /* Hairline divider — the kind you'd see between sections of a printed essay */

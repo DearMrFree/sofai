@@ -155,12 +155,12 @@ export function SofaiChat() {
       {!isOpen ? (
         <Button
           aria-label="Open SofAI chat"
-          className="fixed bottom-4 right-4 z-50 h-12 rounded-lg bg-stone-950 px-4 text-white shadow-2xl hover:bg-stone-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 sm:bottom-5 sm:right-5"
+          className="fixed bottom-3 right-3 z-50 h-12 w-12 rounded-lg bg-stone-950 p-0 text-white shadow-2xl hover:bg-stone-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 sm:bottom-5 sm:right-5 sm:w-auto sm:px-4"
           onClick={() => setIsOpen(true)}
           type="button"
         >
           <MessageCircle className="size-5" />
-          <span>SofAI</span>
+          <span className="hidden sm:inline">SofAI</span>
         </Button>
       ) : null}
 

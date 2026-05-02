@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s · School of Freedom",
   },
   description:
-    "The digital home of Movement Thinking — a unifying gateway to specialised educational pathways designed to liberate human potential.",
+    "The business gateway for School of Freedom, The VR School, and School of AI. One profile for individuals, corporations, schools, and partner entities.",
   applicationName: "School of Freedom",
   authors: [{ name: "Dr. Freedom Cheteni", url: "https://sof.ai/founder" }],
   creator: "Dr. Freedom Cheteni",
@@ -34,6 +34,9 @@ export const metadata: Metadata = {
     "Dr. Freedom Cheteni",
     "The VR School",
     "The AI School",
+    "School of AI",
+    "corporate education partnerships",
+    "school district partnerships",
     "self-driving classroom",
     "manifesto",
     "moonshot education",
@@ -44,14 +47,14 @@ export const metadata: Metadata = {
     url: "https://sof.ai",
     siteName: "School of Freedom",
     title: "School of Freedom",
-    description:
-      "The digital home of Movement Thinking — a unifying gateway to specialised educational pathways designed to liberate human potential.",
+  description:
+      "The business gateway for School of Freedom, The VR School, and School of AI. One profile for individuals, corporations, schools, and partner entities.",
   },
   twitter: {
     card: "summary_large_image",
     title: "School of Freedom",
-    description:
-      "The digital home of Movement Thinking — gateway to The VR School and The AI School.",
+  description:
+      "One profile and a clear gateway into The VR School, School of AI, and School of Freedom partnerships.",
   },
   alternates: {
     canonical: "https://sof.ai",
