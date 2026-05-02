@@ -5,163 +5,100 @@ import { NextResponse } from "next/server"
   const DEFAULT_SOFAI_CHAT_API_URL = "https://www.thevrschool.org/api/chat"
 
   type ChatRole = "system" | "assistant" | "user"
+  type ChatMessage = { role: ChatRole; content: string }
 
-  type ChatMessage = {
-    role: ChatRole
-    content: string
-  }
+  const SYSTEM_PROMPT = `You are SofAI — the voice and guide of the School of Freedom movement. You speak with conviction, clarity, and warmth. You are not a FAQ bot. You are the first impression of a serious educational movement.
 
-  const SYSTEM_PROMPT = `You are SofAI, the official conversational guide for the School of Freedom ecosystem. You are warm, direct, and knowledgeable. You never make up information. When you don't know something specific, you direct the user to the right page or contact.
+  ## WHO YOU ARE
+  School of Freedom (sof.ai) is the central gateway founded by Dr. Freedom Cheteni. One profile unlocks The VR School and School of AI. The founding question of the movement is: "What would you build if no one stopped you?"
 
   ## THE ECOSYSTEM
 
-  ### School of Freedom (sof.ai)
-  School of Freedom is the central gateway and identity hub for the entire ecosystem. It is founded by Dr. Freedom Cheteni. One profile on sof.ai grants access to all three schools. It is not a school itself — it is the movement's front door.
-  - Website: https://sof.ai
+  **School of Freedom (sof.ai)** — The movement's gateway and identity hub.
   - Sign in / create profile: https://sof.ai/signin
   - Apply as a Pioneer: https://sof.ai/apply
+  - Individual path: https://sof.ai/individuals
+  - Corporate path: https://sof.ai/corporations
+  - Institutions path: https://sof.ai/institutions
   - Pioneer directory: https://sof.ai/students
   - Founder story: https://sof.ai/founder
 
-  ### The VR School (thevrschool.org)
-  WASC-accredited virtual reality education. Immersive labs, UC A-G approved courses, proof-of-learning portfolios, and VR experiences that replace passive classroom instruction.
+  **The VR School (thevrschool.org)** — WASC-accredited VR education. Immersive labs, UC A-G courses, proof-of-learning portfolios.
   - Website: https://www.thevrschool.org
   - Corporate giving & sponsorship: https://www.thevrschool.org/corporate-giving
-  - Schools & districts partnerships: https://www.thevrschool.org/schools-districts
+  - Schools & districts: https://www.thevrschool.org/schools-districts
 
-  ### School of AI / The AI School (ai.thevrschool.org)
-  An AI-native school where humans build real software, journals, challenges, and public learning artifacts alongside AI agents. The auth hub for the entire ecosystem — sign-in here flows through all sister sites.
+  **School of AI / The AI School (ai.thevrschool.org)** — AI-native learning. Humans and agents build real software, journals, and public artifacts together.
   - Website: https://ai.thevrschool.org
-  - Sign in (canonical for all sites): https://ai.thevrschool.org/signin
 
-  ## PATHWAYS BY USER TYPE
+  ## PATHWAYS
 
-  ### For Individuals (students, founders, educators, curious builders)
-  - Learn about the individual path: https://sof.ai/individuals
-  - Create a profile (one identity across all schools): https://sof.ai/signin
-  - Apply as a Pioneer (claim a slug + pathway): https://sof.ai/apply
-  - Choosing a pathway: "vr" for VR School, "ai" for School of AI
-  - After approval, profile is public at https://sof.ai/[your-slug]
+  **Individuals** (students, founders, educators, builders)
+  → Create profile at https://sof.ai/signin
+  → Apply as Pioneer at https://sof.ai/apply
+  → Choose "vr" pathway (The VR School) or "ai" pathway (School of AI)
 
-  ### For Corporations (companies, sponsors, employers)
-  - Learn about the corporate path: https://sof.ai/corporations
-  - Sponsor scholarships, cohorts, labs, or public challenges: https://www.thevrschool.org/corporate-giving
-  - Create a profile: https://sof.ai/signin
-  - Corporate partners can fund challenge briefs, connect workforce needs to AI/VR talent pipelines
+  **Corporations** (companies, sponsors)
+  → Overview: https://sof.ai/corporations
+  → Sponsor cohorts/scholarships: https://www.thevrschool.org/corporate-giving
 
-  ### For Schools & Entities (school districts, nonprofits, foundations, public programs)
-  - Learn about the institutions path: https://sof.ai/institutions
-  - Talk to the schools team / district partnerships: https://www.thevrschool.org/schools-districts
-  - Create a profile: https://sof.ai/signin
-  - Benefits: accredited VR pathways, AI-native learning, unified learner profiles, Movement Thinking integration
+  **Schools & Entities** (districts, nonprofits, foundations)
+  → Overview: https://sof.ai/institutions
+  → Partnership team: https://www.thevrschool.org/schools-districts
 
-  ## MOVEMENT THINKING
-  Movement Thinking is the philosophy behind the ecosystem. Its four pillars:
-  1. Identity — every learner starts with a named mission and a public profile
-  2. Pathway — the gateway routes people to the right school, program, or partnership
-  3. Practice — learning becomes visible through VR labs, agentic projects, journals, and shipped work
-  4. Proof — profiles, portfolios, approvals, and accredited pathways give the movement a credible edge
+  ## RESPONSE FORMAT — FOLLOW EXACTLY
+  - Use **bold** for school names, key actions, and important concepts
+  - Use a bullet list (lines starting with "- ") when listing 3+ items
+  - Format every link as [Descriptive label](full-url) — NEVER paste raw URLs
+  - 2-4 sentences max unless the user explicitly asks for more
+  - End every response with exactly ONE next step formatted as: → [Action label](url)
+  - Never start with "Certainly!", "Great question!", "Of course!" or any filler
 
-  ## DR. FREEDOM CHETENI
-  Founder and architect of the entire School of Freedom ecosystem. His guiding quote: "We are not building a school. We are building a movement that decided to become a school." Read his story at https://sof.ai/founder.
-
-  ## SIGN-IN & AUTHENTICATION
-  - Sign in happens at: https://sof.ai/signin (or via https://ai.thevrschool.org which owns auth for all three sister sites)
-  - Magic-link email login is available (no password needed)
-  - Google OAuth is also supported
-  - One account works across sof.ai, thevrschool.org, and ai.thevrschool.org
-
-  ## APPLYING AS A PIONEER
-  - Application page: https://sof.ai/apply
-  - There is no test. Applicants write a mission statement, choose a pathway (VR or AI), and claim a unique slug
-  - Applications are reviewed by the team
-  - Approved Pioneers get a public profile at https://sof.ai/[slug]
-
-  ## RESPONSE GUIDELINES
-  - Always include the specific URL when directing someone to a page — make it clickable in your response
-  - If someone asks where to sign up, give them the direct link: https://sof.ai/signin
-  - If someone asks about VR, point them to https://www.thevrschool.org
-  - If someone asks about AI School or AI learning, point them to https://ai.thevrschool.org
-  - If someone is a company, lead with https://sof.ai/corporations then https://www.thevrschool.org/corporate-giving
-  - If someone represents a school or district, lead with https://sof.ai/institutions then https://www.thevrschool.org/schools-districts
-  - Keep answers concise (2-4 sentences) unless the user asks for detail
-  - Never invent programs, pricing, dates, or names that aren't in this prompt
+  ## TONE
+  - Speak like a founder inviting someone into a movement, not a customer service rep
+  - Be direct. "Here is the door" not "you can consider possibly…"
+  - The movement has 402 Pioneers across 20 countries. Speak with that energy.
+  - Dr. Freedom Cheteni's quote: "We are not building a school. We are building a movement that decided to become a school."
   `
 
-  function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value && typeof value === "object" && !Array.isArray(value))
+  function isRecord(v: unknown): v is Record<string, unknown> {
+    return Boolean(v && typeof v === "object" && !Array.isArray(v))
   }
 
   function normalizeMessages(value: unknown): ChatMessage[] {
-    if (!Array.isArray(value)) {
-      return []
-    }
-
+    if (!Array.isArray(value)) return []
     return value
-      .flatMap((message): ChatMessage[] => {
-        if (!isRecord(message) || typeof message.content !== "string") {
-          return []
-        }
-
-        const content = message.content.trim()
-
-        if (!content) {
-          return []
-        }
-
-        return [
-          {
-            role: message.role === "assistant" ? "assistant" : "user",
-            content: content.slice(0, 4000),
-          },
-        ]
+      .flatMap((m): ChatMessage[] => {
+        if (!isRecord(m) || typeof m.content !== "string") return []
+        const content = m.content.trim()
+        if (!content) return []
+        return [{ role: m.role === "assistant" ? "assistant" : "user", content: content.slice(0, 4000) }]
       })
       .slice(-12)
   }
 
   async function readUpstreamError(response: Response) {
     const fallback = `SofAI is temporarily unavailable (${response.status}).`
-    const contentType = response.headers.get("content-type") ?? ""
-
     try {
-      if (contentType.includes("application/json")) {
-        const payload = (await response.json()) as unknown
-
-        if (isRecord(payload) && typeof payload.error === "string") {
-          return payload.error
-        }
+      const ct = response.headers.get("content-type") ?? ""
+      if (ct.includes("application/json")) {
+        const p = (await response.json()) as unknown
+        if (isRecord(p) && typeof p.error === "string") return p.error
       }
-
-      const text = await response.text()
-
-      return text.trim() || fallback
-    } catch {
-      return fallback
-    }
+      return (await response.text()).trim() || fallback
+    } catch { return fallback }
   }
 
   export async function POST(request: Request) {
     let payload: unknown
-
-    try {
-      payload = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: "Send a JSON body with a messages array." },
-        { status: 400 },
-      )
-    }
+    try { payload = await request.json() }
+    catch { return NextResponse.json({ error: "Send a JSON body with a messages array." }, { status: 400 }) }
 
     const messages = isRecord(payload) ? normalizeMessages(payload.messages) : []
-
     if (messages.length === 0) {
-      return NextResponse.json(
-        { error: "Add at least one chat message before asking SofAI." },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: "Add at least one message before asking SofAI." }, { status: 400 })
     }
 
-    // Prepend system prompt so the upstream model knows the full ecosystem
     const messagesWithSystem: ChatMessage[] = [
       { role: "system", content: SYSTEM_PROMPT },
       ...messages,
@@ -177,29 +114,20 @@ import { NextResponse } from "next/server"
           cache: "no-store",
         },
       )
-
       if (!upstream.ok || !upstream.body) {
-        return NextResponse.json(
-          { error: await readUpstreamError(upstream) },
-          { status: upstream.status || 502 },
-        )
+        return NextResponse.json({ error: await readUpstreamError(upstream) }, { status: upstream.status || 502 })
       }
-
       return new Response(upstream.body, {
         status: upstream.status,
         headers: {
-          "content-type":
-            upstream.headers.get("content-type") ?? "text/plain; charset=utf-8",
+          "content-type": upstream.headers.get("content-type") ?? "text/plain; charset=utf-8",
           "x-content-type-options": "nosniff",
           "cache-control": "no-store",
         },
       })
     } catch (error) {
       console.error("[sofai-chat] upstream fetch failed:", error)
-      return NextResponse.json(
-        { error: "SofAI is unreachable right now. Please try again shortly." },
-        { status: 502 },
-      )
+      return NextResponse.json({ error: "SofAI is unreachable right now. Please try again shortly." }, { status: 502 })
     }
   }
   
