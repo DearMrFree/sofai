@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react"
 import { ArrowRight, Loader2, Mail, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { safeCallbackUrl } from "@/lib/safe-callback-url"
+import { buildHandoffUrl } from "@/lib/sso/canonical"
 
 const GoogleGlyph = () => (
   <svg
@@ -52,10 +53,6 @@ export default function SigninPage() {
 function SigninInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  // Sanitise — same open-redirect protection as /signin/magic. NextAuth
-  // itself validates server-side against NEXTAUTH_URL, but the client-
-  // side `router.replace(callbackUrl)` in onGuest re-opens the hole
-  // without this allow-list.
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"))
   const errorCode = searchParams.get("error")
 
@@ -91,9 +88,6 @@ function SigninInner() {
         error?: string
       }
       if (!res.ok || !data.delivered) {
-        // Surface the recoverable error rather than rendering a fake
-        // "Check your inbox" — same false-positive avoidance pattern as
-        // sof-ai-repo PR #48.
         setEmailError(
           data.error ?? "We couldn't send the email. Please try again.",
         )
@@ -118,63 +112,57 @@ function SigninInner() {
         redirect: false,
         callbackUrl,
       })
-      if (result?.error) {
-        setGeneralError("Couldn't start your guest session. Please try again.")
-        return
+      if (result?.ok) {
+        router.replace(callbackUrl)
+      } else {
+        setGeneralError("Guest sign-in failed. Please try again.")
       }
-      router.replace(callbackUrl)
-      router.refresh()
     } catch {
-      // Network failure or NextAuth client throw — surface to the user
-      // instead of silently clearing the spinner with no explanation.
-      setGeneralError(
-        "Network problem reaching the sign-in service. Please try again.",
-      )
+      setGeneralError("Something went wrong. Please try again.")
     } finally {
       setGuestLoading(false)
     }
   }
 
-  async function onGoogle() {
+  // Route Google sign-in through the canonical auth surface at
+  // ai.thevrschool.org so all three sister sites (sof.ai,
+  // www.thevrschool.org, ai.thevrschool.org) share one identity.
+  function onGoogle() {
     setGeneralError(null)
     setGoogleLoading(true)
-    try {
-      await signIn("google", { callbackUrl })
-    } catch {
-      setGeneralError(
-        "Couldn't reach Google sign-in. Please try again or use email.",
-      )
-    } finally {
-      setGoogleLoading(false)
-    }
+    // buildHandoffUrl encodes the next path and stamps the domain.
+    // The canonical surface checks the session and either:
+    //   (a) mints a bridge token and returns to /api/auth/sso/finish, or
+    //   (b) shows its /signin (with Google) then bounces back here.
+    const handoffUrl = buildHandoffUrl(callbackUrl)
+    window.location.href = handoffUrl
   }
 
   return (
     <section className="relative isolate flex flex-1 flex-col items-center justify-center px-4 py-20">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b from-emerald-100/60 via-orange-50/40 to-transparent blur-2xl"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b from-emerald-100/60 via-orange-50/40 to-transparent"
       />
-      <div className="w-full max-w-md rounded-2xl border border-border/70 bg-background/80 p-8 shadow-sm backdrop-blur">
-        <header className="mb-8 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            <Sparkles className="h-3 w-3" aria-hidden="true" />
-            School of Freedom
-          </span>
-          <h1 className="mt-4 font-serif text-3xl text-foreground">
-            Step inside the movement.
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            One identity, three sites. Sign in once and your work travels with you.
-          </p>
-        </header>
 
-        {generalError ? (
-          <div className="mb-5 rounded-md border border-rose-200/70 bg-rose-50/70 px-3 py-2 text-sm text-rose-800">
+      <div className="w-full max-w-sm">
+        <h1 className="mb-2 text-center font-serif text-3xl font-semibold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+        <p className="mb-8 text-center text-sm text-muted-foreground">
+          Sign in to continue your journey.
+        </p>
+
+        {generalError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
             {generalError}
           </div>
-        ) : null}
+        )}
 
+        {/* Google — canonical SSO via ai.thevrschool.org */}
         <Button
           type="button"
           variant="outline"
@@ -191,58 +179,51 @@ function SigninInner() {
           Continue with Google
         </Button>
 
-        <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-border/70" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            or
-          </span>
-          <span className="h-px flex-1 bg-border/70" />
+        <div className="relative my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
 
+        {/* Magic-link email */}
         {emailSent ? (
-          <div className="rounded-lg border border-emerald-200/70 bg-emerald-50/60 p-4 text-sm text-emerald-900">
-            <p className="flex items-center gap-2 font-medium">
-              <Mail className="h-4 w-4" aria-hidden="true" />
-              Check {email.trim().toLowerCase()}
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+            <p className="font-medium">Check your inbox</p>
+            <p className="mt-1 text-emerald-700">
+              We sent a sign-in link to <strong>{email}</strong>.
+              {emailExpiresAt && (
+                <> It expires at {new Date(emailExpiresAt).toLocaleTimeString()}.</>
+              )}
             </p>
-            <p className="mt-1.5 text-emerald-900/80">
-              We sent a one-time sign-in link.
-              {emailExpiresAt
-                ? ` It expires shortly — open the email and click the button.`
-                : null}
-            </p>
-            <button
-              type="button"
-              className="mt-3 inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.16em] text-emerald-800 hover:text-emerald-700"
-              onClick={() => {
-                setEmailSent(false)
-                setEmail("")
-              }}
-            >
-              Use a different email <ArrowRight className="h-3 w-3" />
-            </button>
           </div>
         ) : (
           <form onSubmit={onMagicLink} className="space-y-3">
-            <label className="block">
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                Email magic link
-              </span>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="you@school.org"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={emailLoading}
-                required
-                className="mt-1.5 block w-full rounded-md border border-border/70 bg-background px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
-            </label>
-            {emailError ? (
-              <p className="text-sm text-rose-700">{emailError}</p>
-            ) : null}
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <div className="relative">
+                <Mail
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={emailLoading}
+                  className="w-full rounded-md border border-input bg-background py-2.5 pl-9 pr-4 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                />
+              </div>
+              {emailError && (
+                <p role="alert" className="mt-1.5 text-xs text-destructive">
+                  {emailError}
+                </p>
+              )}
+            </div>
             <Button
               type="submit"
               size="lg"
@@ -252,19 +233,20 @@ function SigninInner() {
               {emailLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Mail className="h-4 w-4" aria-hidden="true" />
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
               )}
-              Email me a sign-in link
+              Send magic link
+              {!emailLoading && (
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              )}
             </Button>
           </form>
         )}
 
-        <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-border/70" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            or
-          </span>
-          <span className="h-px flex-1 bg-border/70" />
+        <div className="relative my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
 
         <Button
@@ -308,11 +290,14 @@ function friendlyError(code: string): string {
     case "OAuthCallback":
     case "OAuthCreateAccount":
     case "Callback":
+    case "BridgeTokenInvalid":
       return "Google sign-in didn't complete. Please try again."
     case "AccessDenied":
       return "Access was denied — please try a different sign-in method."
     case "CredentialsSignin":
       return "That sign-in attempt didn't succeed. Please try again."
+    case "GuestBridgeRequiresEmail":
+      return "Please sign in with Google or email to continue across sites."
     default:
       return "Sign-in didn't complete. Please try again."
   }
