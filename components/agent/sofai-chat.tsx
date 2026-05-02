@@ -1,264 +1,376 @@
 "use client"
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react"
-import { Bot, Loader2, MessageCircle, Send, X } from "lucide-react"
+  import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react"
+  import { Loader2, Send, Sparkles, X } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+  import { cn } from "@/lib/utils"
 
-type ChatRole = "assistant" | "user"
+  type ChatRole = "assistant" | "user"
 
-type ChatMessage = {
-  id: string
-  role: ChatRole
-  content: string
-}
+  type ChatMessage = {
+    id: string
+    role: ChatRole
+    content: string
+  }
 
-const welcomeMessage: ChatMessage = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "Hi, I'm SofAI. Ask me about School of Freedom, The VR School, School of AI, Movement Thinking, lessons, or what to build next.",
-}
+  const welcomeMessage: ChatMessage = {
+    id: "welcome",
+    role: "assistant",
+    content:
+      "Hi, I'm SofAI — your guide to School of Freedom, The VR School, School of AI, and Movement Thinking. What would you like to explore?",
+  }
 
-export function SofaiChat() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage])
-  const endOfMessagesRef = useRef<HTMLDivElement | null>(null)
+  const QUICK_PROMPTS = [
+    "What is Movement Thinking?",
+    "How do I apply as a Pioneer?",
+    "Tell me about The VR School",
+    "What is School of Freedom?",
+  ]
 
-  useEffect(() => {
-    if (isOpen) {
-      endOfMessagesRef.current?.scrollIntoView({ block: "end" })
-    }
-  }, [isOpen, messages])
+  export function SofaiChat() {
+    const [isOpen, setIsOpen] = useState(false)
+    const [input, setInput] = useState("")
+    const [isLoading, setIsLoading] = useState(false)
+    const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage])
+    const endOfMessagesRef = useRef<HTMLDivElement | null>(null)
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  async function submitMessage(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault()
+    useEffect(() => {
+      if (isOpen) {
+        endOfMessagesRef.current?.scrollIntoView({ block: "end" })
+      }
+    }, [isOpen, messages])
 
-    const content = input.trim()
+    useEffect(() => {
+      const ta = textareaRef.current
+      if (ta) {
+        ta.style.height = "auto"
+        ta.style.height = `${Math.min(ta.scrollHeight, 112)}px`
+      }
+    }, [input])
 
-    if (!content || isLoading) {
-      return
-    }
+    async function submitMessage(
+      event?: FormEvent<HTMLFormElement>,
+      quickPrompt?: string,
+    ) {
+      event?.preventDefault()
 
-    const timestamp = Date.now()
-    const userMessage: ChatMessage = {
-      id: `user-${timestamp}`,
-      role: "user",
-      content,
-    }
-    const assistantId = `assistant-${timestamp}`
-    const assistantMessage: ChatMessage = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-    }
-    const nextMessages = [...messages, userMessage]
-    const history = nextMessages
-      .filter((message) => message.id !== welcomeMessage.id)
-      .map(({ role, content }) => ({ role, content }))
+      const content = (quickPrompt ?? input).trim()
 
-    setMessages([...nextMessages, assistantMessage])
-    setInput("")
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: history }),
-      })
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as
-          | { error?: string }
-          | null
-
-        throw new Error(
-          payload?.error ?? "SofAI could not answer that request yet.",
-        )
+      if (!content || isLoading) {
+        return
       }
 
-      if (!response.body) {
-        throw new Error("SofAI did not return a response.")
+      const timestamp = Date.now()
+      const userMessage: ChatMessage = {
+        id: `user-${timestamp}`,
+        role: "user",
+        content,
       }
+      const assistantId = `assistant-${timestamp}`
+      const assistantMessage: ChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+      }
+      const nextMessages = [...messages, userMessage]
+      const history = nextMessages
+        .filter((m) => m.id !== welcomeMessage.id)
+        .map(({ role, content: c }) => ({ role, content: c }))
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let assistantText = ""
+      setMessages([...nextMessages, assistantMessage])
+      setInput("")
+      setIsLoading(true)
 
-      while (true) {
-        const { done, value } = await reader.read()
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        })
 
-        if (done) {
-          break
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string }
+            | null
+          throw new Error(
+            payload?.error ?? "SofAI could not answer that request yet.",
+          )
         }
 
-        assistantText += decoder.decode(value, { stream: true })
+        if (!response.body) {
+          throw new Error("SofAI did not return a response.")
+        }
 
-        setMessages((currentMessages) =>
-          currentMessages.map((message) =>
-            message.id === assistantId
-              ? { ...message, content: assistantText }
-              : message,
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let assistantText = ""
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          assistantText += decoder.decode(value, { stream: true })
+          setMessages((curr) =>
+            curr.map((m) =>
+              m.id === assistantId ? { ...m, content: assistantText } : m,
+            ),
+          )
+        }
+
+        const trailing = decoder.decode()
+        if (trailing) assistantText += trailing
+
+        setMessages((curr) =>
+          curr.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  content:
+                    assistantText.trim() ||
+                    "I heard you, but I could not form a full answer. Please try again.",
+                }
+              : m,
           ),
         )
+      } catch (error) {
+        const msg =
+          error instanceof Error
+            ? error.message
+            : "SofAI is unavailable right now. Please try again soon."
+        setMessages((curr) =>
+          curr.map((m) => (m.id === assistantId ? { ...m, content: msg } : m)),
+        )
+      } finally {
+        setIsLoading(false)
       }
+    }
 
-      const trailingText = decoder.decode()
-
-      if (trailingText) {
-        assistantText += trailingText
+    function handleInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault()
+        void submitMessage()
       }
-
-      setMessages((currentMessages) =>
-        currentMessages.map((message) =>
-          message.id === assistantId
-            ? {
-                ...message,
-                content:
-                  assistantText.trim() ||
-                  "I heard you, but I could not form a full answer. Please try again.",
-              }
-            : message,
-        ),
-      )
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "SofAI is unavailable right now. Please try again soon."
-
-      setMessages((currentMessages) =>
-        currentMessages.map((chatMessage) =>
-          chatMessage.id === assistantId
-            ? { ...chatMessage, content: message }
-            : chatMessage,
-        ),
-      )
-    } finally {
-      setIsLoading(false)
     }
-  }
 
-  function handleInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault()
-      void submitMessage()
-    }
-  }
+    const isWelcomeOnly =
+      messages.length === 1 && messages[0].id === "welcome"
 
-  return (
-    <>
-      {!isOpen ? (
-        <Button
-          aria-label="Open SofAI chat"
-          className="fixed bottom-3 right-3 z-50 h-12 w-12 rounded-lg bg-stone-950 p-0 text-white shadow-2xl hover:bg-stone-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 sm:bottom-5 sm:right-5 sm:w-auto sm:px-4"
-          onClick={() => setIsOpen(true)}
-          type="button"
-        >
-          <MessageCircle className="size-5" />
-          <span className="hidden sm:inline">SofAI</span>
-        </Button>
-      ) : null}
+    return (
+      <>
+        {/* ── Trigger button ── */}
+        {!isOpen && (
+          <button
+            aria-label="Open SofAI chat"
+            className="group fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-white shadow-[0_8px_32px_rgba(4,120,87,0.45)] transition-all duration-300 hover:scale-105 hover:shadow-[0_8px_40px_rgba(4,120,87,0.65)] sm:bottom-6 sm:right-6"
+            style={{
+              background: "linear-gradient(135deg,#065f46 0%,#047857 60%,#064e3b 100%)",
+            }}
+            onClick={() => setIsOpen(true)}
+            type="button"
+          >
+            <span className="absolute inset-0 rounded-2xl ring-2 ring-emerald-400/30 animate-ping pointer-events-none" />
+            <Sparkles className="size-4 shrink-0" />
+            <span className="text-sm font-semibold tracking-wide">Ask SofAI</span>
+          </button>
+        )}
 
-      {isOpen ? (
-        <section
-          aria-label="SofAI chat"
-          className="fixed inset-3 z-50 flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-2xl sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[620px] sm:max-h-[calc(100vh-2.5rem)] sm:w-[410px]"
-        >
-          <header className="flex items-center justify-between gap-3 bg-stone-950 px-4 py-3 text-white dark:bg-stone-900">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Bot className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <h2 className="font-sans text-sm font-semibold tracking-normal">
-                  SofAI
-                </h2>
-                <p className="truncate text-xs text-stone-300">
-                  School of Freedom guide
-                </p>
-              </div>
-            </div>
-            <Button
-              aria-label="Close SofAI chat"
-              className="size-9 rounded-md text-white hover:bg-white/10 hover:text-white"
-              onClick={() => setIsOpen(false)}
-              size="icon"
-              type="button"
-              variant="ghost"
+        {/* ── Chat panel ── */}
+        {isOpen && (
+          <section
+            aria-label="SofAI chat"
+            className="fixed inset-3 z-50 flex min-h-0 flex-col overflow-hidden rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.22)] sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[640px] sm:max-h-[calc(100vh-3rem)] sm:w-[420px]"
+            style={{
+              animation: "sofai-slide-up 0.28s cubic-bezier(0.34,1.56,0.64,1) both",
+            }}
+          >
+            {/* Header */}
+            <header
+              className="relative flex items-center justify-between gap-3 px-4 py-3.5 text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg,#065f46 0%,#064e3b 55%,#1a1a2e 100%)",
+              }}
             >
-              <X className="size-5" />
-            </Button>
-          </header>
-
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-background px-4 py-4">
-            {messages.map((message) => (
+              {/* Grid overlay */}
               <div
-                className={cn(
-                  "flex",
-                  message.role === "user" ? "justify-end" : "justify-start",
-                )}
-                key={message.id}
-              >
-                <div
-                  className={cn(
-                    "max-w-[86%] rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card text-card-foreground",
-                  )}
-                >
-                  {message.content ? (
-                    <p className="whitespace-pre-wrap break-words">
-                      {message.content}
+                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 24px)," +
+                    "repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 24px)",
+                }}
+              />
+
+              <div className="relative flex min-w-0 items-center gap-3">
+                {/* Avatar */}
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur-sm">
+                  <Sparkles className="size-5 text-emerald-300" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold tracking-wide">SofAI</h2>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+                    <p className="text-xs text-emerald-200/80">
+                      School of Freedom guide
                     </p>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      <span>Thinking</span>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-            ))}
-            <div ref={endOfMessagesRef} />
-          </div>
 
-          <form
-            className="border-t border-border bg-card p-3"
-            onSubmit={submitMessage}
-          >
-            <div className="flex items-end gap-2">
-              <textarea
-                aria-label="Message SofAI"
-                className="max-h-28 min-h-11 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm leading-6 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring"
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={handleInputKeyDown}
-                placeholder="Ask SofAI..."
-                rows={1}
-                value={input}
-              />
-              <Button
-                aria-label="Send message"
-                className="size-11 rounded-md"
-                disabled={!input.trim() || isLoading}
-                size="icon"
-                type="submit"
+              <button
+                aria-label="Close SofAI chat"
+                className="relative flex size-8 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white"
+                onClick={() => setIsOpen(false)}
+                type="button"
               >
-                {isLoading ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <Send className="size-5" />
+                <X className="size-4" />
+              </button>
+            </header>
+
+            {/* Messages */}
+            <div
+              className="min-h-0 flex-1 overflow-y-auto bg-[#fffaf0] px-4 py-4"
+              style={{ scrollbarWidth: "thin", scrollbarColor: "#e7e0d2 transparent" }}
+            >
+              <div className="flex flex-col gap-3">
+                {messages.map((message, i) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex gap-2",
+                      message.role === "user"
+                        ? "justify-end"
+                        : "items-end justify-start",
+                    )}
+                    style={{
+                      animation: `sofai-fade-in 0.22s ease both ${i * 0.04}s`,
+                    }}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="mb-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-900">
+                        <Sparkles className="size-3 text-white" />
+                      </div>
+                    )}
+
+                    <div
+                      className={cn(
+                        "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                        message.role === "user"
+                          ? "rounded-br-sm text-white shadow-[0_4px_16px_rgba(4,120,87,0.28)]"
+                          : "rounded-bl-sm border border-[#e7e0d2] bg-white text-[#18181b] shadow-sm",
+                      )}
+                      style={
+                        message.role === "user"
+                          ? {
+                              background:
+                                "linear-gradient(135deg,#065f46 0%,#047857 100%)",
+                            }
+                          : undefined
+                      }
+                    >
+                      {message.content ? (
+                        <p className="whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-1 px-1 py-1">
+                          <span
+                            className="size-2 rounded-full bg-emerald-500 animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          />
+                          <span
+                            className="size-2 rounded-full bg-emerald-500 animate-bounce"
+                            style={{ animationDelay: "140ms" }}
+                          />
+                          <span
+                            className="size-2 rounded-full bg-emerald-500 animate-bounce"
+                            style={{ animationDelay: "280ms" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Quick prompts — welcome screen only */}
+                {isWelcomeOnly && (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {QUICK_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        className="rounded-full border border-[#d1c9bc] bg-white px-3 py-1.5 text-xs font-medium text-[#3d3730] shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800"
+                        onClick={() => void submitMessage(undefined, prompt)}
+                        type="button"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </Button>
+              </div>
+              <div ref={endOfMessagesRef} />
             </div>
-          </form>
-        </section>
-      ) : null}
-    </>
-  )
-}
+
+            {/* Input */}
+            <form
+              className="border-t border-[#e7e0d2] bg-white px-3 py-3"
+              onSubmit={submitMessage}
+            >
+              <div className="flex items-end gap-2 rounded-xl border border-[#e7e0d2] bg-[#fffaf0] px-3 py-2 transition-shadow focus-within:border-emerald-500 focus-within:shadow-[0_0_0_3px_rgba(4,120,87,0.12)]">
+                <textarea
+                  ref={textareaRef}
+                  aria-label="Message SofAI"
+                  className="max-h-28 min-h-[28px] flex-1 resize-none bg-transparent text-sm leading-6 text-[#18181b] outline-none placeholder:text-[#b4aca2]"
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleInputKeyDown}
+                  placeholder="Ask SofAI anything…"
+                  rows={1}
+                  value={input}
+                />
+                <button
+                  aria-label="Send message"
+                  className={cn(
+                    "mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all",
+                    input.trim() && !isLoading
+                      ? "text-white shadow-[0_2px_8px_rgba(4,120,87,0.4)] hover:shadow-[0_4px_14px_rgba(4,120,87,0.55)]"
+                      : "cursor-not-allowed bg-[#f0e9d8] text-[#b4aca2]",
+                  )}
+                  style={
+                    input.trim() && !isLoading
+                      ? {
+                          background:
+                            "linear-gradient(135deg,#065f46 0%,#047857 100%)",
+                        }
+                      : undefined
+                  }
+                  disabled={!input.trim() || isLoading}
+                  type="submit"
+                >
+                  {isLoading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Send className="size-3.5" />
+                  )}
+                </button>
+              </div>
+              <p className="mt-2 text-center text-[10px] text-[#b4aca2]">
+                SofAI · School of Freedom
+              </p>
+            </form>
+          </section>
+        )}
+
+        <style>{`
+          @keyframes sofai-slide-up {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0)   scale(1);    }
+          }
+          @keyframes sofai-fade-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0);   }
+          }
+        `}</style>
+      </>
+    )
+  }
+  
