@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -13,8 +12,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const course = getCourseBySlug(params.slug)
   if (!course) return { title: "Course Not Found" }
   return {
-    title: `${course.title} \xb7 The VR School`,
-    description: `${course.title} \u2014 Section ${course.section}: ${SECTION_META[course.section].label}. ${course.length}, online delivery${course.ucHonors ? ", UC Honors" : ""}. The VR School, Stanford.`,
+    title: `${course.title} · The VR School`,
+    description: `${course.title} — Section ${course.section}: ${SECTION_META[course.section].label}. ${course.length}, online delivery${course.ucHonors ? ", UC Honors" : ""}. The VR School, Stanford.`,
   }
 }
 
@@ -29,7 +28,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── Header ───────────────────────────────────────────── */}
+      {/* Header */}
       <section className="border-b border-border/60 bg-gradient-to-br from-stone-50 to-amber-50/40 dark:from-stone-950 dark:to-stone-900">
         <div className="max-w-5xl mx-auto px-6 py-12">
           <Link
@@ -38,20 +37,15 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Course Catalog
           </Link>
-
-          {/* Section badge */}
           <div className="mb-4">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sectionMeta.color}`}>
               <span className="font-mono">{course.section}</span>
               <span>{sectionMeta.label}</span>
             </span>
           </div>
-
           <h1 className="text-3xl md:text-5xl font-serif tracking-tight mb-6 max-w-3xl leading-tight">
             {course.title}
           </h1>
-
-          {/* Meta strip */}
           <div className="flex flex-wrap gap-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="w-4 h-4" />
@@ -75,7 +69,7 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
         </div>
       </section>
 
-      {/* ── Content placeholder ──────────────────────────────── */}
+      {/* Content placeholder */}
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="max-w-2xl">
           <div className="p-8 rounded-2xl border border-dashed border-border/80 bg-muted/20 text-center">
@@ -86,19 +80,19 @@ export default function CoursePage({ params }: { params: { slug: string } }) {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Full course description, learning objectives, prerequisites, and materials
               for <span className="font-medium text-foreground">{course.title}</span> will
-              be published here for the 2026\u201327 academic year.
+              be published here for the 2026&ndash;27 academic year.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── Related courses ──────────────────────────────────── */}
+      {/* Related courses */}
       {related.length > 0 && (
         <>
           <div className="rule-hairline max-w-5xl mx-auto px-6" />
           <section className="max-w-5xl mx-auto px-6 py-12">
             <h3 className="text-lg font-serif mb-6">
-              More in Section {course.section} \u2014 {sectionMeta.label}
+              More in Section {course.section} &mdash; {sectionMeta.label}
             </h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {related.map((c) => (
