@@ -23,6 +23,6 @@ export const SISTER_SCHOOLS = {
   lms: {
     name: "iTeachXR",
     tagline: "Prove learning with transcripts and dashboards.",
-    href: "https://iteachxr-production.up.railway.app",
+    href: "https://iteachxr-production-d1b8.up.railway.app",
   },
 } as const

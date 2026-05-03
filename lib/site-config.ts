@@ -64,7 +64,7 @@
       },
       lms: {
         name: "iTeachXR",
-        url: "https://iteachxr-production.up.railway.app",
+        url: "https://iteachxr-production-d1b8.up.railway.app",
         tagline: "Dashboards, transcripts, and academic evidence.",
         badge: "Learning proof layer",
         description:
