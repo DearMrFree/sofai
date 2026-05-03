@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
+import type { ReactNode } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight, GraduationCap, BookOpen, Star, Award, FlaskConical, Cpu, Globe } from "lucide-react"
 
 // ── Student registry ─────────────────────────────────────────
-// Add future students here. The subdomain slug must match the
-// directory name in [slug]/ and the Vercel domain alias.
 type SubjectKey = "english" | "math" | "science" | "cs" | "history" | "art" | "social"
 
 interface CourseRow {
@@ -84,28 +83,27 @@ const STUDENTS: Record<string, StudentRecord> = {
       },
     ],
     recentCourses: [
-      { title: "Advanced Calculus BC",              level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
-      { title: "AP Physics C: Mechanics",            level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
-      { title: "AP Physics 2: Algebra Based",        level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
-      { title: "Design as Discovery (Stanford)",     level: "ADV",     grade: "A+", credits: 5, year: "2025-26" },
-      { title: "CPrep Computer Science A",           level: "HON",     grade: "A",  credits: 5, year: "2025-26" },
-      { title: "Experimental Archaeology in VR",     level: "HGH HON", grade: "A+", credits: 5, year: "2025-26" },
-      { title: "ACC College Writing",                level: "GFTED",   grade: "A+", credits: 5, year: "2025-26" },
-      { title: "ENRCHD Government and Policy",       level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
+      { title: "Advanced Calculus BC",           level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
+      { title: "AP Physics C: Mechanics",         level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
+      { title: "AP Physics 2: Algebra Based",     level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
+      { title: "Design as Discovery (Stanford)",  level: "ADV",     grade: "A+", credits: 5, year: "2025-26" },
+      { title: "CPrep Computer Science A",        level: "HON",     grade: "A",  credits: 5, year: "2025-26" },
+      { title: "Experimental Archaeology in VR",  level: "HGH HON", grade: "A+", credits: 5, year: "2025-26" },
+      { title: "ACC College Writing",             level: "GFTED",   grade: "A+", credits: 5, year: "2025-26" },
+      { title: "ENRCHD Government and Policy",    level: "HON",     grade: "A+", credits: 5, year: "2025-26" },
     ],
-    apCount: 14,
+    apCount: 15,
   },
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-const subjectIcons: Record<SubjectKey, React.ReactNode> = {
-  cs:      <Cpu      className="w-5 h-5" />,
+const subjectIcons: Record<SubjectKey, ReactNode> = {
+  cs:      <Cpu          className="w-5 h-5" />,
   science: <FlaskConical className="w-5 h-5" />,
-  math:    <Star     className="w-5 h-5" />,
-  history: <Globe    className="w-5 h-5" />,
-  english: <BookOpen className="w-5 h-5" />,
-  art:     <Award    className="w-5 h-5" />,
-  social:  <Globe    className="w-5 h-5" />,
+  math:    <Star         className="w-5 h-5" />,
+  history: <Globe        className="w-5 h-5" />,
+  english: <BookOpen     className="w-5 h-5" />,
+  art:     <Award        className="w-5 h-5" />,
+  social:  <Globe        className="w-5 h-5" />,
 }
 
 function gradeColor(g: string) {
@@ -114,7 +112,6 @@ function gradeColor(g: string) {
   return "text-foreground"
 }
 
-// ── Page ─────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const s = STUDENTS[params.slug.toLowerCase()]
   if (!s) return { title: "Student Not Found" }
@@ -130,21 +127,18 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* Hero */}
       <section className="border-b border-border/60 bg-gradient-to-br from-stone-50 to-amber-50/40 dark:from-stone-950 dark:to-stone-900">
         <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-muted-foreground mb-6">
             <GraduationCap className="w-3.5 h-3.5" />
             <span>The VR School · Stanford, CA · WASC Accredited</span>
           </div>
-
           <h1 className="text-5xl md:text-7xl font-serif tracking-tight mb-3">{s.name}</h1>
           <p className="text-lg text-muted-foreground mb-2">
             Grade {s.grade} · Class of {s.graduationYear} · Student #{s.studentId}
           </p>
           <p className="text-sm font-mono text-amber-700 dark:text-amber-400 mb-8">{s.tagline}</p>
-
-          {/* Stats strip */}
           <div className="flex flex-wrap gap-6 mb-10">
             {s.highlights.map((h) => (
               <div key={h.label} className="flex flex-col">
@@ -153,8 +147,6 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
               </div>
             ))}
           </div>
-
-          {/* CTA row */}
           <div className="flex flex-wrap gap-3">
             <a
               href={s.dashboardUrl}
@@ -172,28 +164,28 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
         </div>
       </section>
 
-      {/* ── Bio ──────────────────────────────────────────────── */}
+      {/* Bio */}
       <section className="max-w-5xl mx-auto px-6 py-14">
         <div className="max-w-2xl">
           <h2 className="text-2xl font-serif mb-4">Academic Profile</h2>
           <p className="text-base leading-relaxed text-muted-foreground">{s.bio}</p>
           <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            Enrollment status: <span className="font-medium text-foreground">{s.status}</span>
+            Enrollment status: <span className="font-medium text-foreground ml-1">{s.status}</span>
           </div>
         </div>
       </section>
 
       <div className="rule-hairline max-w-5xl mx-auto px-6" />
 
-      {/* ── Subject strengths ────────────────────────────────── */}
+      {/* Subject strengths */}
       <section className="max-w-5xl mx-auto px-6 py-14">
         <h2 className="text-2xl font-serif mb-8">Areas of Distinction</h2>
         <div className="grid sm:grid-cols-2 gap-6">
           {s.subjectStrengths.map((area) => (
             <div
               key={area.subject}
-              className="group p-6 rounded-xl border border-border/60 bg-card hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
+              className="p-6 rounded-xl border border-border/60 bg-card hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
             >
               <div className="flex items-center gap-2.5 mb-3 text-amber-700 dark:text-amber-400">
                 {subjectIcons[area.icon]}
@@ -207,7 +199,7 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
 
       <div className="rule-hairline max-w-5xl mx-auto px-6" />
 
-      {/* ── Recent coursework ────────────────────────────────── */}
+      {/* Recent coursework */}
       <section className="max-w-5xl mx-auto px-6 py-14">
         <div className="flex items-end justify-between mb-8">
           <h2 className="text-2xl font-serif">Current Year Highlights</h2>
@@ -218,7 +210,6 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
             All {s.apCount} advanced courses <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -245,7 +236,7 @@ export default function StudentPortfolio({ params }: { params: { slug: string } 
 
       <div className="rule-hairline max-w-5xl mx-auto px-6" />
 
-      {/* ── Footer CTA ───────────────────────────────────────── */}
+      {/* Footer CTA */}
       <section className="max-w-5xl mx-auto px-6 py-14">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-8 rounded-2xl border border-amber-200 dark:border-amber-900 bg-amber-50/40 dark:bg-amber-950/20">
           <div>
