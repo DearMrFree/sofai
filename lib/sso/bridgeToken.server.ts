@@ -73,7 +73,29 @@ export function mintBridgeToken(opts: MintOptions): string {
   return `${payloadB64}.${b64urlEncode(sig)}`
 }
 
-/** Guard used by the handoff route to reject unknown requesting domains. */
+/**
+ * Guard used by the handoff route to reject unknown requesting domains.
+ *
+ * In addition to the static allow-list, we also trust the hostname of
+ * ITEACHXR_URL (set in Fly.io env) so any Railway / custom deployment
+ * URL works without code changes.
+ */
 export function isAllowedDomain(domain: string): boolean {
-  return ALLOWED_DOMAINS.has(domain.toLowerCase())
+  const d = domain.toLowerCase()
+
+  // Static allow-list
+  if (ALLOWED_DOMAINS.has(d)) return true
+
+  // Dynamic: trust whatever ITEACHXR_URL is pointed at (Railway, custom domain, etc.)
+  const iteachxrUrl = process.env.ITEACHXR_URL
+  if (iteachxrUrl) {
+    try {
+      const host = new URL(iteachxrUrl).hostname.toLowerCase()
+      if (d === host) return true
+    } catch {
+      // Malformed URL — skip
+    }
+  }
+
+  return false
 }
