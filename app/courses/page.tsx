@@ -1,13 +1,12 @@
-
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { COURSES, SECTION_META, getCoursesBySection, type UcSection } from "@/lib/courses"
 
 export const metadata: Metadata = {
-  title: "Course Catalog 2026\u201327 \xb7 The VR School",
+  title: "Course Catalog 2026–27 · The VR School",
   description:
-    "Complete UC A-G approved course list for The VR School \u2014 " +
+    "Complete UC A-G approved course list for The VR School — " +
     String(COURSES.length) +
     " courses across History, English, Mathematics, Science, Languages, Arts, and College-Prep Electives.",
 }
@@ -25,21 +24,19 @@ function HonorsBadge() {
 export default function CourseCatalog() {
   const total = COURSES.length
   const honors = COURSES.filter((c) => c.ucHonors).length
-  const sections = SECTIONS.slice(0, 6) // A–F
+  const sections = SECTIONS.slice(0, 6)
   const gCourses = getCoursesBySection("G")
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* Hero */}
       <section className="border-b border-border/60 bg-gradient-to-br from-stone-50 to-amber-50/40 dark:from-stone-950 dark:to-stone-900">
         <div className="max-w-5xl mx-auto px-6 py-14 md:py-20">
           <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4">
-            The VR School \xb7 Stanford, CA \xb7 College Board Code 170588
+            The VR School &middot; Stanford, CA &middot; College Board Code 170588
           </p>
-          <h1 className="text-5xl md:text-7xl font-serif tracking-tight mb-3">
-            Course Catalog
-          </h1>
-          <p className="text-lg text-muted-foreground mb-8">2026\u201327 Academic Year \xb7 UC A-G Approved</p>
+          <h1 className="text-5xl md:text-7xl font-serif tracking-tight mb-3">Course Catalog</h1>
+          <p className="text-lg text-muted-foreground mb-8">2026&ndash;27 Academic Year &middot; UC A-G Approved</p>
           <div className="flex flex-wrap gap-8">
             <div className="flex flex-col">
               <span className="text-2xl font-semibold tabular-nums">{total}</span>
@@ -61,25 +58,20 @@ export default function CourseCatalog() {
         </div>
       </section>
 
-      {/* ── A–F sections ─────────────────────────────────────── */}
+      {/* A-F sections */}
       <section className="max-w-5xl mx-auto px-6 py-14 space-y-16">
         {sections.map((sec) => {
           const meta = SECTION_META[sec]
           const courses = getCoursesBySection(sec)
           return (
             <div key={sec} id={`section-${sec}`}>
-              {/* Section header */}
               <div className="flex items-baseline gap-4 mb-6">
-                <span className="text-5xl font-serif text-muted-foreground/30 leading-none select-none">
-                  {sec}
-                </span>
+                <span className="text-5xl font-serif text-muted-foreground/30 leading-none select-none">{sec}</span>
                 <div>
                   <h2 className="text-xl font-serif">{meta.label}</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">{courses.length} courses</p>
                 </div>
               </div>
-
-              {/* Course list */}
               <div className="rounded-xl border border-border/60 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/30">
@@ -102,12 +94,8 @@ export default function CourseCatalog() {
                           </Link>
                           {c.ucHonors && <HonorsBadge />}
                         </td>
-                        <td className="px-5 py-3.5 text-muted-foreground text-xs hidden sm:table-cell">
-                          {c.discipline}
-                        </td>
-                        <td className="px-5 py-3.5 text-muted-foreground text-xs hidden md:table-cell tabular-nums">
-                          {c.length}
-                        </td>
+                        <td className="px-5 py-3.5 text-muted-foreground text-xs hidden sm:table-cell">{c.discipline}</td>
+                        <td className="px-5 py-3.5 text-muted-foreground text-xs hidden md:table-cell tabular-nums">{c.length}</td>
                         <td className="px-5 py-3.5 text-muted-foreground">
                           <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </td>
@@ -123,7 +111,7 @@ export default function CourseCatalog() {
 
       <div className="rule-hairline max-w-5xl mx-auto px-6" />
 
-      {/* ── G: College-Prep Electives ────────────────────────── */}
+      {/* G: College-Prep Electives */}
       <section className="max-w-5xl mx-auto px-6 py-14" id="section-G">
         <div className="flex items-baseline gap-4 mb-6">
           <span className="text-5xl font-serif text-muted-foreground/30 leading-none select-none">G</span>
@@ -132,8 +120,6 @@ export default function CourseCatalog() {
             <p className="text-xs text-muted-foreground mt-0.5">{gCourses.length} courses</p>
           </div>
         </div>
-
-        {/* Alphabetical grid for G — fast to scan, still linkable */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {gCourses.map((c) => (
             <Link
@@ -157,7 +143,7 @@ export default function CourseCatalog() {
 
       <div className="rule-hairline max-w-5xl mx-auto px-6" />
 
-      {/* ── Jump nav ─────────────────────────────────────────── */}
+      {/* Jump nav */}
       <section className="max-w-5xl mx-auto px-6 py-10">
         <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">Jump to section</p>
         <div className="flex flex-wrap gap-2">
