@@ -62,6 +62,14 @@
         description:
           "AI-native school where humans and agents build real software, journals, challenges, and public learning artifacts together. The canonical auth hub for all three sister sites.",
       },
+      lms: {
+        name: "iTeachXR",
+        url: "https://iteachxr-production.up.railway.app",
+        tagline: "Dashboards, transcripts, and academic evidence.",
+        badge: "Learning proof layer",
+        description:
+          "The role-based LMS where students, teachers, and administrators see progress, courses, records, and proof that learning happened.",
+      },
     },
 
     paths: {
@@ -183,6 +191,8 @@
 
   **${schools.ai.name} (${schools.ai.url})** — ${schools.ai.description}
 
+  **${schools.lms.name} (${schools.lms.url})** — ${schools.lms.description}
+
   Stats: ${stats.pioneers} Pioneers · ${stats.countries} Countries · ${stats.accreditation}-accredited
 
   ## PATHWAYS
@@ -218,4 +228,3 @@
   9. When someone sounds ready to join, lead with: "Here is your door:" then the most relevant link
   10. ${stats.pioneers} Pioneers across ${stats.countries} countries started exactly like this — speak with that gravity`
   }
-  

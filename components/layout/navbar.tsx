@@ -33,6 +33,7 @@ function contextLabel(pathname: string): string {
 
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/#pathways", label: "Pathways" },
+  { href: "/#schools", label: "Campus" },
   { href: "/individuals", label: "Individuals" },
   { href: "/corporations", label: "Corporations" },
   { href: "/institutions", label: "Entities" },

@@ -6,8 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Centralised links to the two sister schools so the gateway can deep-link
- * into them without hard-coded strings scattered through components.
+ * Centralised ecosystem links so the gateway can deep-link without hard-coded
+ * URLs scattered through components.
  */
 export const SISTER_SCHOOLS = {
   vr: {
@@ -16,8 +16,13 @@ export const SISTER_SCHOOLS = {
     href: "https://www.thevrschool.org",
   },
   ai: {
-    name: "The AI School",
+    name: "School of AI",
     tagline: "Build with AI agents alongside you.",
     href: "https://ai.thevrschool.org",
+  },
+  lms: {
+    name: "iTeachXR",
+    tagline: "Prove learning with transcripts and dashboards.",
+    href: "https://iteachxr-production.up.railway.app",
   },
 } as const

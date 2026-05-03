@@ -76,6 +76,14 @@ export function Footer() {
                 {SISTER_SCHOOLS.ai.name}
               </a>
             </li>
+            <li>
+              <a
+                href={SISTER_SCHOOLS.lms.href}
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                {SISTER_SCHOOLS.lms.name}
+              </a>
+            </li>
           </ul>
         </div>
 
