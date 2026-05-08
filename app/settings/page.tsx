@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 
 import { authOptions } from "@/lib/auth"
+import { buildHandoffUrl, buildUpgradeSignInUrl } from "@/lib/sso/canonical"
 import { fetchUserProfileByEmail } from "@/lib/userProfile"
 import { SettingsForm } from "./settings-form"
 
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.email) {
-    redirect("/signin?callbackUrl=/settings")
+    redirect(buildHandoffUrl("/settings"))
   }
 
   const email = session.user.email
@@ -58,7 +59,7 @@ export default async function SettingsPage() {
         <div className="rule-hairline my-12" aria-hidden="true" />
         <div className="flex flex-wrap gap-3">
           <Link
-            href={`/api/auth/signout?callbackUrl=${encodeURIComponent("/signin?callbackUrl=/settings")}`}
+            href={buildUpgradeSignInUrl("/settings")}
             className="inline-flex items-center rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90"
           >
             Switch to a real account

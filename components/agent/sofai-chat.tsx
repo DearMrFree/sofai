@@ -62,7 +62,7 @@
 
   const CTA_MAP: { pattern: RegExp; href: string; label: string; desc: string; cta: string; primary?: boolean }[] = [
     { pattern: /sof\.ai\/apply/, href: "https://sof.ai/apply", label: "Apply as a Pioneer", desc: "Claim your slug. Declare your mission.", cta: "Apply now", primary: true },
-    { pattern: /sof\.ai\/signin|create.*profile|sign.*up/i, href: "https://sof.ai/signin", label: "Create your profile", desc: "One identity across all three schools.", cta: "Get started", primary: true },
+    { pattern: /sof\.ai\/signin|create.*profile|sign.*up/i, href: SITE.auth.signin, label: "Create your profile", desc: "One identity across all three schools.", cta: "Get started", primary: true },
     { pattern: /thevrschool\.org\/corporate-giving/, href: "https://www.thevrschool.org/corporate-giving", label: "Corporate sponsorship", desc: "Fund cohorts, scholarships & challenges.", cta: "Partner →" },
     { pattern: /thevrschool\.org\/schools-districts/, href: "https://www.thevrschool.org/schools-districts", label: "Schools & districts", desc: "Accredited VR education for your org.", cta: "Talk to us →" },
     { pattern: /(?:www\.)?thevrschool\.org(?!\/corporate|\/schools)/i, href: "https://www.thevrschool.org", label: "The VR School", desc: "WASC-accredited immersive VR education.", cta: "Open →" },

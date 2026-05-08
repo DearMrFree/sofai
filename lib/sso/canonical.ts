@@ -67,3 +67,13 @@ export function buildSignOutChain(next: string = "/"): string {
   canonicalLeg.searchParams.set("next", home)
   return `/api/auth/sso/signout?next=${encodeURIComponent(canonicalLeg.toString())}`
 }
+
+/**
+ * Clear the local sof.ai cookie first, then immediately enter the
+ * canonical handoff. Use this for "upgrade from guest" links so an
+ * ephemeral local session cannot keep shadowing the real Google/email
+ * identity the visitor is trying to claim.
+ */
+export function buildUpgradeSignInUrl(next: string = "/settings"): string {
+  return `/api/auth/sso/signout?next=${encodeURIComponent(buildHandoffUrl(next))}`
+}

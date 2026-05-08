@@ -30,7 +30,7 @@
     },
 
     auth: {
-      signin: "https://sof.ai/signin",
+      signin: "https://ai.thevrschool.org/api/auth/sso/handoff?domain=sof.ai&next=%2Fsettings",
       apply: "https://sof.ai/apply",
       canonical: "https://ai.thevrschool.org",
     },
@@ -80,7 +80,10 @@
         description:
           "Students, founders, educators, and builders start with one identity — then move into The VR School or School of AI without a separate login.",
         cta: {
-          primary: { label: "Create profile", href: "https://sof.ai/signin" },
+          primary: {
+            label: "Create profile",
+            href: "https://ai.thevrschool.org/api/auth/sso/handoff?domain=sof.ai&next=%2Fsettings",
+          },
           secondary: { label: "Apply as a Pioneer", href: "/apply" },
         },
         quickPrompts: [

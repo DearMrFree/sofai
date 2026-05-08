@@ -75,24 +75,41 @@ export async function GET(req: NextRequest) {
     : "next-auth.session-token"
 
   const res = NextResponse.redirect(next)
-  // No domain attribute on this gateway (host-only cookie). Match
-  // the same options NextAuth wrote it with so the browser actually
-  // accepts the deletion.
-  res.cookies.set(cookieName, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: useSecure,
-    maxAge: 0,
-  })
-  for (const suffix of [".0", ".1", ".2"]) {
-    res.cookies.set(cookieName + suffix, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: useSecure,
-      maxAge: 0,
-    })
-  }
+  clearSessionCookies(res, cookieName, useSecure)
   return res
+}
+
+function clearSessionCookies(
+  res: NextResponse,
+  cookieName: string,
+  secure: boolean,
+) {
+  const names = Array.from(new Set([
+    cookieName,
+    "__Secure-next-auth.session-token",
+    "next-auth.session-token",
+  ]))
+
+  for (const name of names) {
+    for (const suffix of ["", ".0", ".1", ".2"]) {
+      appendExpiredCookie(res, name + suffix, secure)
+    }
+  }
+}
+
+function appendExpiredCookie(
+  res: NextResponse,
+  name: string,
+  secure: boolean,
+) {
+  const parts = [
+    `${name}=`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+  ]
+  if (secure) parts.push("Secure")
+  res.headers.append("Set-Cookie", parts.join("; "))
 }
