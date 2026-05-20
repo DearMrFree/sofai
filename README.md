@@ -69,3 +69,48 @@ Cream paper · deep emerald · warm orange · amber gold. Editorial serif
 headlines for the manifesto register; clean Geist sans for everything
 else. The two sister schools each get their own gradient on `/` so the
 gateway never flattens them into a single voice.
+
+
+## Repository map
+
+### Web app (Next.js / TypeScript)
+- `app/`: App Router pages and API routes (site pages, auth, admin, chat, uploads).
+- `components/`: UI, layout, and section-level building blocks.
+- `lib/`: shared business logic (auth, SSO bridge, site config, profile utilities).
+- `types/`: TypeScript type augmentations (for example NextAuth).
+
+### API service (FastAPI / Python)
+- `src/sof_ai_api/main.py`: FastAPI entrypoint and router mounting.
+- `src/sof_ai_api/routes/`: endpoint modules (health, progress, wallet, journals, challenges, pioneer applications).
+- `src/sof_ai_api/models.py`: SQLModel entities and constraints.
+- `src/sof_ai_api/ledger.py`: points/ledger domain logic.
+- `src/sof_ai_api/integrations/`: external integrations (including OJS adapter/client).
+
+### Infra and tooling
+- `Dockerfile`: container build definition.
+- `fly.toml`: Fly.io deploy configuration.
+- `pyproject.toml`: Python package and dependency settings.
+- `package.json`: Node scripts and dependencies.
+
+## Suggested next build targets
+1. **Contract tests between Next API routes and FastAPI endpoints** to prevent regressions across the TS/Python boundary.
+2. **End-to-end auth flow tests** (magic link + SSO handoff/signout) to harden enrollment onboarding.
+3. **Observability baseline** (request IDs, structured logs, health/readiness checks, error budget alerts).
+4. **Data lifecycle docs** for progress/enrollment and ledger mutations to simplify contributor onboarding.
+
+
+
+## Vercel deployment (CI/CD)
+
+This repo now includes `.github/workflows/vercel-deploy.yml` for automatic deployments:
+
+- Pull requests to `main` create a **Preview** deployment.
+- Pushes to `main` create a **Production** deployment.
+
+Configure these GitHub repository secrets before enabling the workflow:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+You can get these values from your Vercel account/project settings and by running `vercel link` locally.
